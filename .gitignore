@@ -1,0 +1,9 @@
+# Raw downloads stay outside the repo (/tmp/...). Never commit raw PSID files (PSID terms forbid redistribution).
+psid/raw/
+*.zip
+*.gz
+*.dat
+*.sas7bdat
+*.dta
+__pycache__/
+.ipynb_checkpoints/
