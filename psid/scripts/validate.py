@@ -9,6 +9,10 @@ Outputs (all counts, means, medians by year/group; no person-level data):
   output/sentinel_counts.csv     heads with a missing-data code or top/bottom code, by year and concept
   output/cgm_sample_check.csv    counts of a CGM-style estimation sample (SRC male heads 20-65, 1970-1992) vs CGM Table 1
   output/jumps.csv               year-to-year changes in PSID means relative to CPS, flagged when large
+  output/break_1994_check.csv    share of heads 25-60 with zero head labor income by year, PSID definition vs the
+                                 consistent definition (farm and business labor income added back from 1994)
+  output/annualize_check.csv     1994-2003 annualized transfers (_ann, _full) vs PSID-generated annual amounts in
+                                 1985-1993 and 2005-2009: recipients, mean and median per recipient head
 """
 import os, sys, glob, collections
 import numpy as np
@@ -134,6 +138,62 @@ def main():
     K["cgm_units"] = [1104, 2816, 1110]; K["cgm_Tbar"] = [8.58, 9.57, 11.06]
     K["share_nonpositive_dropped"] = round(n_nonpos / n_all, 5); K["cgm_share_zero_dropped"] = 0.00495
     K.reset_index(names="educ_group").to_csv(os.path.join(OUT, "cgm_sample_check.csv"), index=False)
+
+    # ---- 1994 break: share of heads with zero labor income, PSID definition vs consistent (farm + business added)
+    rows = []
+    base = F[F["age_h"].between(25, 60) & F["year"].between(1985, 2023)]
+    for gname, d0 in (("male_heads_25_60", base[base["sex_h"] == 1]),
+                      ("male_heads_25_60_SRC_SEO", base[(base["sex_h"] == 1) & base["sample"].isin(["SRC", "SEO"])]),
+                      ("male_heads_25_60_hours_pos", base[(base["sex_h"] == 1) & (base["hours_h"] > 0)]),
+                      ("all_heads_25_60", base)):
+        for y, d in d0.groupby("year"):
+            w = d["fam_weight"].to_numpy(float)
+            r = dict(group=gname, year=y, n=len(d))
+            for nm, c in (("psid", "labinc_h"), ("cons", "labinc_h_cons")):
+                x = d[c].to_numpy(float); ok = ~np.isnan(x)
+                r[f"zero_share_{nm}"] = round(float((x[ok] == 0).mean()), 4)
+                r[f"wzero_share_{nm}"] = round(wmean(np.where(ok, (x == 0).astype(float), np.nan), w), 4)
+                r[f"wmean_{nm}"] = round(wmean(x, w), 0)
+                r[f"n_missing_{nm}"] = int((~ok).sum())
+            for nm, c in (("psid", "cgm_inc_psiddef"), ("cons", "cgm_inc")):
+                x = d[c].to_numpy(float); ok = ~np.isnan(x)
+                r[f"cgm_nonpos_share_{nm}"] = round(float((x[ok] <= 0).mean()), 4)
+            r["n_farmlab_pos"] = int((d["farmlab_h"] > 0).sum()); r["n_buslab_h_pos"] = int((d["buslab_h"] > 0).sum())
+            rows.append(r)
+    B = pd.DataFrame(rows)
+    B.to_csv(os.path.join(OUT, "break_1994_check.csv"), index=False)
+    m = B[B["group"] == "male_heads_25_60"].set_index("year")
+    pre, post_p, post_c = m.loc[1993, "zero_share_psid"], m.loc[1994, "zero_share_psid"], m.loc[1994, "zero_share_cons"]
+    status = "CLOSED" if abs(post_c - pre) <= 0.01 else "NOT CLOSED"
+    print(f"1994 break check (male heads 25-60, zero head labor income): 1993 {pre:.3f}; 1994 PSID {post_p:.3f}, "
+          f"consistent {post_c:.3f} -> {status} (tolerance 1 point)")
+
+    # ---- annualized 1994-2003 transfers vs PSID-generated annual amounts in 1985-1993 and 2005-2009
+    rows = []
+    items = ["unemp_h", "wcomp_h", "unemp_w", "wcomp_w", "ssi_h", "ssi_w", "welf_h", "welf_w", "chsup_h", "chsup_w",
+             "help_h", "help_w", "adc_h", "adc_w"]
+    for k in items:
+        for y, d in F[F["year"].between(1985, 2009)].groupby("year"):
+            r = dict(item=k, year=y, n_heads=len(d))
+            if 1994 <= y <= 2003:
+                a = d[k + "_rep"]; r["n_recipients"] = int((a > 0).sum()); r["n_amount_missing"] = int(a.isna().sum())
+                r["n_unit_assumed_year"] = int(d["ann_flags"].str.contains(k + ":unit_assumed").sum())
+                r["n_unit_implausible"] = int(d["ann_flags"].str.contains(k + ":unit_implausible").sum())
+                for v in ("ann", "full"):
+                    x = d[f"{k}_{v}"]; r[f"mean_per_recipient_{v}"] = round(x[x > 0].mean(), 0)
+                    r[f"median_per_recipient_{v}"] = round(x[x > 0].median(), 0)
+                r["mean_per_recipient_rep"] = round(a[a > 0].mean(), 0)
+                r["source"] = "annualized"
+            elif k in d and d[k].notna().any():
+                x = d[k]; r["n_recipients"] = int((x > 0).sum()); r["n_amount_missing"] = int(x.isna().sum())
+                r["mean_per_recipient_generated"] = round(x[x > 0].mean(), 0)
+                r["median_per_recipient_generated"] = round(x[x > 0].median(), 0)
+                r["source"] = "psid_generated"
+            else:
+                continue
+            rows.append(r)
+    A = pd.DataFrame(rows)
+    A.to_csv(os.path.join(OUT, "annualize_check.csv"), index=False)
 
     # ---- sentinel / top-code counts
     cnt = collections.Counter()

@@ -1,9 +1,9 @@
 """Write psid/varmap.csv: the hand-checked map of PSID variables to concepts, one row per survey year x concept.
 
-Usage: python3 -I psid/scripts/varmap.py DO_FILE_366057 DO_FILE_366052 [CODEBOOK_TXT ...] > psid/varmap.csv
+Usage: python3 -I psid/scripts/varmap.py DO_366057 DO_366052 DO_366062 [CODEBOOK_TXT ...] > psid/varmap.csv
 
 The map below (MAP) is explicit: every variable was chosen by hand from the .do labels and checked against the
-codebook text (pdftotext -layout of J366057_codebook.pdf and J366052_codebook.pdf). An earlier version of this
+codebook text (pdftotext -layout of J366057_codebook.pdf, J366052_codebook.pdf and J366062_codebook.pdf). An earlier version of this
 script guessed the map with label regexes; that version mis-assigned or missed the items listed in README.md.
 The script only reads the .do files (names, labels) and, if given, the codebook text, from which it copies the
 missing-data codes (na_codes), top codes (top_code) and bottom codes (bottom_code) of each variable. No data are
@@ -16,7 +16,8 @@ import csv, json, re, sys
 
 YEARS = list(range(1968, 1998)) + list(range(1999, 2024, 2))
 
-# concept -> (job, "year:var ...", note). Job 366057 = main extract, 366052 = first extract (transfers, state).
+# concept -> (job, "year:var ...", note). Job 366057 = main extract, 366052 = first extract (transfers, state),
+# 366062 = third extract (farm and business labor income, transfer time units, ADC/AFDC, individual weights).
 MAP = {
     # ---------- identifiers and weights
     "fid": ("366057", """1968:V3 1969:V442 1970:V1102 1971:V1802 1972:V2402 1973:V3002 1974:V3402 1975:V3802 1976:V4302
@@ -324,6 +325,47 @@ MAP = {
         1996:ER33306 1997:ER33406 1999:ER33506 2001:ER33606 2003:ER33706 2005:ER33806 2007:ER33906 2009:ER34006
         2011:ER34106 2013:ER34206 2015:ER34307 2017:ER34506 2019:ER34706 2021:ER34906 2023:ER35106""",
         "1992 not in extract"),
+    # ---------- third extract (J366062): farm and business income, time units of the 1994-2003 transfers, weights
+    "farm_hw": ("366062", """1994:ER4117 1995:ER6957 1996:ER9208 1997:ER12065 1999:ER16448 2001:ER20420 2003:ER24105
+        2005:ER27908 2007:ER40898 2009:ER46806 2011:ER52214 2013:ER58015 2015:ER65195 2017:ER71272 2019:ER77294
+        2021:ER81621 2023:ER85475""",
+        "farm income (labor + asset parts; can be negative). Labelled head 1994-2013, but the codebook says head's and "
+        "wife's farm income, split 50-50 if the farm-ownership item (not in the extracts) says joint; 2015+ head+spouse"),
+    "buslab_h": ("366062", """1994:ER4119 1995:ER6959 1996:ER9210 1997:ER12193 1999:ER16490 2001:ER20422 2003:ER24109
+        2005:ER27910 2007:ER40900 2009:ER46808 2011:ER52216 2013:ER58017 2015:ER65197 2017:ER71274 2019:ER77296
+        2021:ER81623 2023:ER85477""", "labor part of head's unincorporated business income (half of positive business "
+        "income if head worked in it; 0 if loss); excluded from labinc_h from 1994"),
+    "buslab_w": ("366062", """1994:ER4141 1995:ER6981 1996:ER9232 1997:ER12214 1999:ER16511 2001:ER20444 2003:ER24111
+        2005:ER27940 2007:ER40930 2009:ER46838 2011:ER52246 2013:ER58047 2015:ER65225 2017:ER71302 2019:ER77324
+        2021:ER81651 2023:ER85505""", "labor part of wife's business income; excluded from labinc_w from 1994"),
+    "adc_h_rep": ("366062", "1994:ER3263 1995:ER6263 1996:ER8380 1997:ER11273 1999:ER14539 2001:ER18698 2003:ER22070",
+        "ADC/AFDC (2003: ADC/TANF) of head, AS REPORTED amount per time unit; not in the CGM measure"),
+    "adc_w_rep": ("366062", "1994:ER3599 1995:ER6601 1996:ER8718 1997:ER11600 1999:ER14866 2001:ER19047 2003:ER22420", "ADC/AFDC/TANF of wife, AS REPORTED"),
+    "unemp_h_per": ("366062", "1994:ER3372 1995:ER6373 1996:ER8490 1997:ER11384 1999:ER14650 2001:ER18816 2003:ER22186", "time unit of unemp_h_rep (codes differ by year; see per_units)"),
+    "wcomp_h_per": ("366062", "1994:ER3387 1995:ER6388 1996:ER8505 1997:ER11399 1999:ER14665 2001:ER18832 2003:ER22202", "time unit of wcomp_h_rep (codes differ by year; see per_units)"),
+    "unemp_w_per": ("366062", "1994:ER3495 1995:ER6496 1996:ER8613 1997:ER11495 1999:ER14761 2001:ER18935 2003:ER22305", "time unit of unemp_w_rep (codes differ by year; see per_units)"),
+    "wcomp_w_per": ("366062", "1994:ER3510 1995:ER6511 1996:ER8628 1997:ER11510 1999:ER14776 2001:ER18951 2003:ER22321", "time unit of wcomp_w_rep (codes differ by year; see per_units)"),
+    "ssi_h_per": ("366062", "1994:ER3279 1995:ER6280 1996:ER8397 1997:ER11290 1999:ER14556 2001:ER18716 2003:ER22088", "time unit of ssi_h_rep (codes differ by year; see per_units)"),
+    "ssi_w_per": ("366062", "1994:ER3585 1995:ER6587 1996:ER8704 1997:ER11586 1999:ER14852 2001:ER19032 2003:ER22405", "time unit of ssi_w_rep (codes differ by year; see per_units)"),
+    "welf_h_per": ("366062", "1994:ER3294 1995:ER6295 1996:ER8412 1997:ER11305 1999:ER14571 2001:ER18732 2003:ER22104", "time unit of welf_h_rep (codes differ by year; see per_units)"),
+    "welf_w_per": ("366062", "1994:ER3630 1995:ER6632 1996:ER8749 1997:ER11631 1999:ER14897 2001:ER19080 2003:ER22453", "time unit of welf_w_rep (codes differ by year; see per_units)"),
+    "chsup_h_per": ("366062", "1994:ER3402 1995:ER6403 1996:ER8520 1997:ER11414 1999:ER14680 2001:ER18848 2003:ER22218", "time unit of chsup_h_rep (codes differ by year; see per_units)"),
+    "chsup_w_per": ("366062", "1994:ER3615 1995:ER6617 1996:ER8734 1997:ER11616 1999:ER14882 2001:ER19064 2003:ER22437", "time unit of chsup_w_rep (codes differ by year; see per_units)"),
+    "help_h_per": ("366062", "1994:ER3432 1995:ER6433 1996:ER8550 1997:ER11444 1999:ER14710 2001:ER18880 2003:ER22250", "time unit of help_h_rep (codes differ by year; see per_units)"),
+    "help_w_per": ("366062", "1994:ER3660 1995:ER6662 1996:ER8779 1997:ER11661 1999:ER14927 2001:ER19112 2003:ER22485", "time unit of help_w_rep (codes differ by year; see per_units)"),
+    "adc_h_per": ("366062", "1994:ER3264 1995:ER6264 1996:ER8381 1997:ER11274 1999:ER14540 2001:ER18699 2003:ER22071", "time unit of adc_h_rep"),
+    "adc_w_per": ("366062", "1994:ER3600 1995:ER6602 1996:ER8719 1997:ER11601 1999:ER14867 2001:ER19048 2003:ER22421", "time unit of adc_w_rep"),
+    "ind_wt_core": ("366062", """1968:ER30019 1969:ER30042 1970:ER30066 1971:ER30090 1972:ER30116 1973:ER30137
+        1974:ER30159 1975:ER30187 1976:ER30216 1977:ER30245 1978:ER30282 1979:ER30312 1980:ER30342 1981:ER30372
+        1982:ER30398 1983:ER30428 1984:ER30462 1985:ER30497 1986:ER30534 1987:ER30569 1988:ER30605 1989:ER30641
+        1990:ER30686 1991:ER30730 1992:ER30803 1993:ER30864 1994:ER33119 1995:ER33275 1996:ER33318""",
+        "1968-1989 core individual weight (0.1-99.9); 1990-1992 updated 1989 core weight; 1993-1996 core longitudinal"),
+    "ind_wt_long": ("366062", """1997:ER33430 1999:ER33546 2001:ER33637 2003:ER33740 2005:ER33848 2007:ER33950
+        2009:ER34045 2011:ER34154 2013:ER34268 2015:ER34413 2017:ER34650 2019:ER34863 2021:ER35064 2023:ER35264""",
+        "core/immigrant individual longitudinal weight"),
+    "ind_wt_xs": ("366062", """1997:ER33438 1999:ER33547 2001:ER33639 2003:ER33742 2005:ER33849 2007:ER33951
+        2009:ER34046 2011:ER34155 2013:ER34269 2015:ER34414 2017:ER34651 2019:ER34864 2021:ER35065 2023:ER35265""",
+        "core/immigrant individual cross-sectional weight (persons, sums to population)"),
 }
 # Cross-year individual variables (no year): id, person number, sex, sample status.
 STATIC = [("pid68", "366057", "ER30001"), ("pn", "366057", "ER30002"), ("sex_ind", "366057", "ER32000"),
@@ -381,16 +423,29 @@ def codes(rows):
     return " ".join(fmt(x) for x in na), (fmt(top) if top != "" else ""), (fmt(bot) if bot != "" else "")
 
 
+UNITS = [(r"^Week\b", "52"), (r"^Two weeks\b", "26"), (r"^Month\b", "12"), (r"^3 months\b", "4"),
+         (r"^6 months\b", "2"), (r"^Year\b", "1"), (r"^Other\b", "other")]
+
+
+def per_units(rows):
+    """Time-unit codes of a *_per variable as 'code=periods_per_year ...' (e.g. '3=52 4=26 5=12 6=1 7=other')."""
+    out = []
+    for lo, hi, text in rows or []:
+        for rx, n in UNITS:
+            if lo == hi and re.match(rx, text, re.I): out.append("%d=%s" % (lo, n)); break
+    return " ".join(out)
+
+
 def main():
-    do57, do52 = sys.argv[1], sys.argv[2]
-    lab = {"366057": labels(do57), "366052": labels(do52)}
-    cb = codebook(sys.argv[3:]) if len(sys.argv) > 3 else {}
+    do57, do52, do62 = sys.argv[1], sys.argv[2], sys.argv[3]
+    lab = {"366057": labels(do57), "366052": labels(do52), "366062": labels(do62)}
+    cb = codebook(sys.argv[4:]) if len(sys.argv) > 4 else {}
     w = csv.writer(sys.stdout, lineterminator="\n")
-    w.writerow(["year", "concept", "var", "job", "label", "na_codes", "top_code", "bottom_code", "note"])
+    w.writerow(["year", "concept", "var", "job", "label", "na_codes", "top_code", "bottom_code", "per_units", "note"])
     seen, bad = set(), []
     for c, job, v in STATIC:
         if v not in lab[job]: bad.append((c, v))
-        w.writerow(["", c, v, job, lab[job].get(v, ""), *codes(cb.get(v)), "cross-year individual variable"])
+        w.writerow(["", c, v, job, lab[job].get(v, ""), *codes(cb.get(v)), "", "cross-year individual variable"])
     for c, (job, spec, note) in MAP.items():
         pairs = dict((int(y), v) for y, v in (t.split(":") for t in spec.split()))
         for y in pairs:
@@ -401,7 +456,9 @@ def main():
             if v not in lab[job]: bad.append((c, y, v))
             if (c, v) in seen: bad.append(("dup", c, v))
             seen.add((c, v))
-            w.writerow([y, c, v, job, lab[job].get(v, ""), *codes(cb.get(v)), note])
+            pu = per_units(cb.get(v)) if c.endswith("_per") else ""
+            if c.endswith("_per") and not pu: bad.append(("no units", c, y, v))
+            w.writerow([y, c, v, job, lab[job].get(v, ""), *codes(cb.get(v)), pu, note])
     if bad:
         print("PROBLEMS:", bad, file=sys.stderr); sys.exit(1)
     used = {v for c, (job, spec, n) in MAP.items() for v in re.findall(r":(\S+)", spec)} | {s[2] for s in STATIC}

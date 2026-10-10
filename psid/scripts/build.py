@@ -1,8 +1,10 @@
-"""Build the PSID family-year and person-year panels from two PSID Data Center extracts.
+"""Build the PSID family-year and person-year panels from three PSID Data Center extracts.
 
-Usage: python3 -I psid/scripts/build.py RAW_DIR1 RAW_DIR2 [OUT_DIR]
+Usage: python3 -I psid/scripts/build.py RAW_DIR1 RAW_DIR2 RAW_DIR3 [OUT_DIR]
   RAW_DIR1 holds J366052.txt/.do (first extract: state, transfers, year of birth)
   RAW_DIR2 holds J366057.txt/.do (main extract)
+  RAW_DIR3 holds J366062.txt/.do (third extract: farm and business labor income, transfer time units,
+           ADC/AFDC, individual weights)
   OUT_DIR  defaults to /mnt/project-files/psid (person-level output; never inside the repo)
 
 Reads psid/varmap.csv (year x concept -> variable, with missing-data and top codes copied from the codebooks)
@@ -18,9 +20,22 @@ PSID = os.path.dirname(HERE)
 YEARS = list(range(1968, 1998)) + list(range(1999, 2024, 2))
 MONEY = ["labinc_h", "labinc_w", "wages_h", "wages_w", "taxable_hw", "faminc", "ucwc_h", "unemp_h", "wcomp_h",
          "unemp_w", "wcomp_w", "ss_h", "ss_w", "ss_hw", "ss_fam", "ssi_hw", "ssi_h", "ssi_w", "welf_h", "welf_hw",
-         "welf_w", "chsup_h", "chsup_hw", "chsup_w", "help_h", "help_w"]
+         "welf_w", "chsup_h", "chsup_hw", "chsup_w", "help_h", "help_w", "farm_hw", "buslab_h", "buslab_w"]
 REPORTED = ["unemp_h_rep", "wcomp_h_rep", "unemp_w_rep", "wcomp_w_rep", "ssi_h_rep", "ssi_w_rep", "welf_h_rep",
-            "welf_w_rep", "chsup_h_rep", "chsup_w_rep", "help_h_rep", "help_w_rep"]
+            "welf_w_rep", "chsup_h_rep", "chsup_w_rep", "help_h_rep", "help_w_rep", "adc_h_rep", "adc_w_rep"]
+# 1994-2003 as-reported transfers: amount per time unit (*_rep) and unit code (*_per); annualized in annualize()
+TRANSFERS = ["unemp_h", "wcomp_h", "unemp_w", "wcomp_w", "ssi_h", "ssi_w", "welf_h", "welf_w", "chsup_h", "chsup_w",
+             "help_h", "help_w", "adc_h", "adc_w"]
+# Unemployment compensation is paid for a spell, not all year. Default (_ann) annualization of UC uses an assumed
+# spell of 16 weeks (= 8 two-week periods = 4 months; average UI duration in the 1990s was about 15-17 weeks, DOL),
+# which brings the mean per recipient into line with the PSID-generated annual amounts of 1993 and 2005; full-year
+# doubles it (validate.py, annualize_check.csv). All other items, workers' compensation included, use full-year
+# multipliers: most WC is reported per year or 'Other', and full-year fits the generated WC means better.
+# The _full variant uses full-year multipliers for every item.
+SPELL = {52: 16, 26: 8, 12: 4}
+SPELL_ITEMS = ("unemp_h", "unemp_w")
+IMPLAUSIBLE = 50000  # full-year annualized amount above this (nominal $) -> the reported amount is taken as annual
+IND_WT = ["ind_wt_core", "ind_wt_long", "ind_wt_xs"]
 CATEG_ZERO_NA = ["occ_h", "occ_h_orig", "indus_h", "indus_h_orig", "occ_w"]  # 0 = inapplicable
 BKT_MID = {0: 0, 1: 250, 2: 750, 3: 1500, 4: 2500, 5: 4000, 6: 6250, 7: 8750, 8: 10000}  # $ bracket midpoints
 BKT_EDUC_YRS = {0: 4, 1: 4, 2: 7, 3: 10, 4: 12, 5: 12, 6: 14, 7: 16, 8: 17}  # bracket -> grades
@@ -65,21 +80,24 @@ def load_map():
         y = int(r["year"]) if r["year"] else None
         vm[(y, r["concept"])] = dict(var=r["var"], job=r["job"], na=nums(r["na_codes"]),
                                      top=float(r["top_code"]) if r["top_code"] else None,
-                                     bot=float(r["bottom_code"]) if r["bottom_code"] else None)
+                                     bot=float(r["bottom_code"]) if r["bottom_code"] else None,
+                                     units={int(k): v for k, v in (t.split("=") for t in r["per_units"].split())})
     return vm
 
 
 def main():
-    raw1, raw2 = sys.argv[1], sys.argv[2]
-    out = sys.argv[3] if len(sys.argv) > 3 else "/mnt/project-files/psid"
+    raw1, raw2, raw3 = sys.argv[1], sys.argv[2], sys.argv[3]
+    out = sys.argv[4] if len(sys.argv) > 4 else "/mnt/project-files/psid"
     os.makedirs(out, exist_ok=True)
     X = {"366052": Extract(os.path.join(raw1, "J366052.txt"), os.path.join(raw1, "J366052.do")),
-         "366057": Extract(os.path.join(raw2, "J366057.txt"), os.path.join(raw2, "J366057.do"))}
-    a, b = X["366052"], X["366057"]
-    assert a.n == b.n == 85536, (a.n, b.n)
+         "366057": Extract(os.path.join(raw2, "J366057.txt"), os.path.join(raw2, "J366057.do")),
+         "366062": Extract(os.path.join(raw3, "J366062.txt"), os.path.join(raw3, "J366062.do"))}
+    a, b, c3 = X["366052"], X["366057"], X["366062"]
+    assert a.n == b.n == c3.n == 85536, (a.n, b.n, c3.n)
     for v in ("ER30001", "ER30002"):
         assert np.array_equal(a.get(v), b.get(v)), f"row order differs on {v}"
-    print(f"{b.n} individuals; row order of both extracts matches on ER30001/ER30002")
+        assert np.array_equal(c3.get(v), b.get(v)), f"row order of J366062 differs on {v}"
+    print(f"{b.n} individuals; row order of all three extracts matches on ER30001/ER30002")
     vm = load_map()
 
     def raw(y, c):
@@ -140,7 +158,8 @@ def main():
             "pid68": pid68[P], "pn": pn[P], "year": y, "interview": intv[P].astype(np.int64),
             "seq": seqv[P].astype(np.int64), "rel": rel[P].astype(np.int64),
             "is_head": is_head[P], "is_spouse": is_sp[P], "age": age_i, "educ_yrs": ed_i, "emp": em_i,
-            "sex": sex_ind[P], "yob": yob_rep[P], "sample_status": samp_status[P], "fam_weight": fw_all[P]}))
+            "sex": sex_ind[P], "yob": yob_rep[P], "sample_status": samp_status[P], "fam_weight": fw_all[P],
+            **{w: (raw(y, w)[P] if raw(y, w) is not None else np.nan) for w in IND_WT}}))
         # ----- heads and spouses
         H = np.flatnonzero(is_head)
         fam_ids = intv[H]
@@ -164,6 +183,10 @@ def main():
         for c in concepts:
             if c.startswith("ind_"): continue
             x, na, tc = clean(y, c, H)
+            if c.endswith("_per"):  # time-unit code -> periods per year (NaN for Other, 0 or DK/NA)
+                u = vm[(y, c)]["units"]
+                f[c[:-4] + "_ppy"] = pd.Series(x).map(lambda k: float(u[int(k)]) if k == k and u.get(int(k), "other")
+                                                      != "other" else np.nan).to_numpy(dtype=float)
             if c == "fid":
                 bad = int((x != f["fid"].to_numpy()).sum())
                 if bad: log.append(f"{y}: {bad} heads whose family-file interview number differs from the individual file")
@@ -185,6 +208,8 @@ def main():
         f["sex_h_ind"] = sex_ind[H]
         f["yob_h_rep"] = yob_rep[H]; f["yob_h_nvals"] = yob_nvals[H]
         f["yob_sp_rep"] = np.where(has_sp, yob_rep[Si], np.nan)
+        for w in IND_WT:  # head's individual weights (0 = not a sample member / not in that weight's sample)
+            r = raw(y, w); f[w + "_h"] = r[H] if r is not None else np.nan
         fam_rows.append(f)
     print("\n".join(log))
     F = pd.concat(fam_rows, ignore_index=True)
@@ -273,18 +298,70 @@ def derive(F):
     # help from relatives: bracket midpoints 1968-1975
     hb = F["help_h_bkt"].to_numpy()
     F["help_h_bktmid"] = pd.Series(np.where((hb >= 0) & (hb <= 8), hb, np.nan)).map(BKT_MID).to_numpy(dtype=float)
+    F = consistent_labinc(F)
+    F = annualize(F)
     F = cgm_income(F)
     F["labinc_hw"] = F["labinc_h"] + F["labinc_w"].fillna(0)
+    F["labinc_hw_cons"] = F["labinc_h_cons"] + F["labinc_w_cons"].fillna(0)
     drop = ["educ_h_ind", "educ_sp_ind", "age_h_ind", "age_sp_ind", "sex_h_ind", "yob_h_rep"]
     F = F.drop(columns=drop)
     first = ["year", "income_year", "fid", "pid68_h", "pn_h", "pid68_sp", "pn_sp", "rel_sp", "sample",
              "fam_weight", "weight_series", "age_h", "sex_h", "yob_h", "yob_src_h", "married", "spouse_present",
              "marital_h", "marital_gen", "age_sp", "educ_yrs_h", "educ4_h", "educ3_h", "educ_src_h", "educ_yrs_h_p",
              "educ4_h_p", "educ3_h_p", "educ_yrs_sp", "educ4_sp", "educ3_sp", "educ_src_sp", "fu_size", "n_children",
-             "labinc_h", "labinc_w", "labinc_hw", "cgm_inc", "cgm_components", "cgm_missing"]
-    last = ["na_flags", "tc_flags"]
+             "ind_wt_core_h", "ind_wt_long_h", "ind_wt_xs_h",
+             "labinc_h", "labinc_w", "labinc_hw", "labinc_h_cons", "labinc_w_cons", "labinc_hw_cons", "farm_hw",
+             "farmlab_h", "buslab_h", "buslab_w", "cgm_inc", "cgm_inc_psiddef", "cgm_components", "cgm_missing"]
+    last = ["na_flags", "tc_flags", "ann_flags"]
     rest = sorted(c for c in F.columns if c not in first + last)
     return F[first + rest + last].sort_values(["year", "fid"]).reset_index(drop=True)
+
+
+def consistent_labinc(F):
+    """Labor income on the pre-1994 definition. From the 1994 survey PSID's labinc_h/labinc_w exclude farm income and
+    the labor part of unincorporated business income; before, both were in. Add them back:
+      labinc_h_cons = labinc_h + farmlab_h + buslab_h,  labinc_w_cons = labinc_w + buslab_w  (1994+)
+    farmlab_h = half of positive farm income (labor part, same 50/50 rule PSID applies to business income; losses
+    give 0). All farm income goes to the head: the items PSID uses to split it between head and wife (farm ownership,
+    e.g. ER3478 1994, ER11490 1997, ER60917 2015, ER66969 2017) are not in the extracts, and before 1994 farm income
+    was the head's. 2015+ the item is the combined reference person + spouse amount, treated the same way.
+    Before 1994 the consistent series equal the PSID series. NaN if any component is missing (e.g. the 1994-95
+    Latino sample and 1997 immigrant refresher, coded 999999 'not asked')."""
+    y = F["year"].to_numpy(); post = y >= 1994
+    F["farmlab_h"] = np.where(post, 0.5 * F["farm_hw"].clip(lower=0), np.nan)
+    F["labinc_h_cons"] = np.where(post, F["labinc_h"] + F["farmlab_h"] + F["buslab_h"], F["labinc_h"])
+    F["labinc_w_cons"] = np.where(post, F["labinc_w"] + F["buslab_w"], F["labinc_w"])
+    return F
+
+
+def annualize(F):
+    """1994-2003 as-reported transfers -> annual amounts. amount x periods per year (from the *_per code and the
+    codebook value labels in varmap.per_units). _full: Week 52, Two weeks 26, Month 12, 3 months 4, 6 months 2,
+    Year 1. _ann (default, used in cgm_inc): the same except UC and WC, which use a 16-week spell (SPELL).
+    The codebook gives no rule and the extracts have no months-received item for these years.
+    Positive amount with unit Other, DK/NA or 0 -> taken as an annual amount and listed in ann_flags
+    (k:unit_assumed_year). A per-period amount whose full-year value exceeds IMPLAUSIBLE (e.g. $18,000 'per week'
+    of help from relatives) is also taken as annual (k:unit_implausible_taken_as_year).
+    Amount DK/NA -> NaN. Amount 0 -> 0."""
+    y = F["year"].to_numpy(); era = (y >= 1994) & (y <= 2003)
+    flags = []
+    for k in TRANSFERS:
+        if k + "_rep" not in F: continue
+        amt = F[k + "_rep"].to_numpy(); ppy = F[k + "_ppy"].to_numpy()
+        assumed = era & (amt > 0) & np.isnan(ppy)
+        implaus = era & (amt > 0) & (ppy > 1) & (amt * ppy > IMPLAUSIBLE)
+        p_full = np.where(assumed | implaus | (amt == 0), 1.0, ppy)
+        p_ann = p_full
+        if k in SPELL_ITEMS:
+            p_ann = pd.Series(p_full).replace(SPELL).to_numpy(dtype=float)
+        F[k + "_full"] = np.where(era, amt * p_full, np.nan)
+        F[k + "_ann"] = np.where(era, amt * p_ann, np.nan)
+        flags.append(np.where(assumed, k + ":unit_assumed_year",
+                              np.where(implaus, k + ":unit_implausible_taken_as_year", "")))
+    arr = np.vstack(flags).T
+    F["ann_flags"] = np.array([";".join(t for t in r if t) for r in arr], dtype=object)
+    F = F.drop(columns=[c for c in F if c.endswith("_ppy")])
+    return F
 
 
 def cgm_income(F):
@@ -297,33 +374,42 @@ def cgm_income(F):
         for c in cs: out = out + z(c)
         return out
     comp = {}
-    comp["lab"] = (s("labinc_h") + z("labinc_w").fillna(0), np.full(len(F), "labinc_h+labinc_w"))
-    ucwc = np.select([(y >= 1970) & (y <= 1976), (y >= 1977) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005)],
-                     [z("ucwc_h"), s("unemp_h", "wcomp_h"), s("unemp_h", "wcomp_h", "unemp_w", "wcomp_w")], 0.0)
-    ucwc_l = np.select([(y >= 1970) & (y <= 1976), (y >= 1977) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005)],
-                       ["ucwc_h", "unemp_h+wcomp_h", "unemp_hw+wcomp_hw"], "")
+    lab_psid = s("labinc_h") + z("labinc_w").fillna(0)
+    comp["lab"] = (s("labinc_h_cons") + z("labinc_w_cons").fillna(0),
+                   np.where(y >= 1994, "labinc_h_cons+labinc_w_cons", "labinc_h+labinc_w"))
+    e94 = (y >= 1994) & (y <= 2003)
+    ucwc = np.select([(y >= 1970) & (y <= 1976), (y >= 1977) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005),
+                      e94],
+                     [z("ucwc_h"), s("unemp_h", "wcomp_h"), s("unemp_h", "wcomp_h", "unemp_w", "wcomp_w"),
+                      s("unemp_h_ann", "wcomp_h_ann", "unemp_w_ann", "wcomp_w_ann")], 0.0)
+    ucwc_l = np.select([(y >= 1970) & (y <= 1976), (y >= 1977) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005),
+                        e94], ["ucwc_h", "unemp_h+wcomp_h", "unemp_hw+wcomp_hw", "unemp_hw_ann+wcomp_hw_ann"], "")
     ss = np.select([y == 1970, (y >= 1971) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005),
                     (y >= 1994) & (y <= 2003)], [z("ss_h"), z("ss_hw"), s("ss_h", "ss_w"), z("ss_fam")], 0.0)
     ss_l = np.select([y == 1970, (y >= 1971) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005),
                       (y >= 1994) & (y <= 2003)], ["ss_h", "ss_hw", "ss_h+ss_w", "ss_fam"], "")
-    ssi = np.select([(y >= 1975) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005)],
-                    [z("ssi_hw"), s("ssi_h", "ssi_w")], 0.0)
-    ssi_l = np.select([(y >= 1975) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005)], ["ssi_hw", "ssi_h+ssi_w"], "")
-    welf = np.select([y == 1970, (y >= 1971) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005)],
-                     [z("welf_h"), z("welf_hw"), s("welf_h", "welf_w")], 0.0)
-    welf_l = np.select([y == 1970, (y >= 1971) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005)],
-                       ["welf_h", "welf_hw", "welf_h+welf_w"], "")
+    ssi = np.select([(y >= 1975) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005), e94],
+                    [z("ssi_hw"), s("ssi_h", "ssi_w"), s("ssi_h_ann", "ssi_w_ann")], 0.0)
+    ssi_l = np.select([(y >= 1975) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005), e94],
+                      ["ssi_hw", "ssi_h+ssi_w", "ssi_h_ann+ssi_w_ann"], "")
+    welf = np.select([y == 1970, (y >= 1971) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005), e94],
+                     [z("welf_h"), z("welf_hw"), s("welf_h", "welf_w"), s("welf_h_ann", "welf_w_ann")], 0.0)
+    welf_l = np.select([y == 1970, (y >= 1971) & (y <= 1985), ((y >= 1986) & (y <= 1993)) | (y >= 2005), e94],
+                       ["welf_h", "welf_hw", "welf_h+welf_w", "welf_h_ann+welf_w_ann"], "")
     cs = np.select([(y >= 1970) & (y <= 1975), (y >= 1976) & (y <= 1980), (y >= 1981) & (y <= 1984),
-                    ((y >= 1985) & (y <= 1993)) | (y >= 2005)],
-                   [z("chsup_h"), z("chsup_hw"), z("chsup_h"), s("chsup_h", "chsup_w")], 0.0)
+                    ((y >= 1985) & (y <= 1993)) | (y >= 2005), e94],
+                   [z("chsup_h"), z("chsup_hw"), z("chsup_h"), s("chsup_h", "chsup_w"),
+                    s("chsup_h_ann", "chsup_w_ann")], 0.0)
     cs_l = np.select([(y >= 1970) & (y <= 1975), (y >= 1976) & (y <= 1980), (y >= 1981) & (y <= 1984),
-                      ((y >= 1985) & (y <= 1993)) | (y >= 2005)],
-                     ["chsup_h(incl_alimony)", "chsup_hw", "chsup_h", "chsup_h+chsup_w"], "")
-    hp = np.select([y <= 1975, (y >= 1976) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005)],
-                   [z("help_h_bktmid"), z("help_h"), s("help_h", "help_w")], 0.0)
-    hp_l = np.select([y <= 1975, (y >= 1976) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005)],
-                     ["help_h(bracket_midpoint)", "help_h", "help_h+help_w"], "")
-    F["cgm_inc"] = comp["lab"][0].to_numpy() + ucwc + ss + ssi + welf + cs + hp
+                      ((y >= 1985) & (y <= 1993)) | (y >= 2005), e94],
+                     ["chsup_h(incl_alimony)", "chsup_hw", "chsup_h", "chsup_h+chsup_w", "chsup_h_ann+chsup_w_ann"], "")
+    hp = np.select([y <= 1975, (y >= 1976) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005), e94],
+                   [z("help_h_bktmid"), z("help_h"), s("help_h", "help_w"), s("help_h_ann", "help_w_ann")], 0.0)
+    hp_l = np.select([y <= 1975, (y >= 1976) & (y <= 1984), ((y >= 1985) & (y <= 1993)) | (y >= 2005), e94],
+                     ["help_h(bracket_midpoint)", "help_h", "help_h+help_w", "help_h_ann+help_w_ann"], "")
+    tr = ucwc + ss + ssi + welf + cs + hp
+    F["cgm_inc"] = comp["lab"][0].to_numpy() + tr
+    F["cgm_inc_psiddef"] = lab_psid.to_numpy() + tr  # same, with PSID-definition labor income (differs from 1994)
     labels = np.vstack([comp["lab"][1], ucwc_l, ss_l, ssi_l, welf_l, cs_l, hp_l]).T
     F["cgm_components"] = ["+".join(t for t in r if t) for r in labels]
     miss = []
@@ -335,9 +421,9 @@ def cgm_income(F):
         if 1970 <= yy <= 1984 and yy not in range(1976, 1981): m += ["chsup_w"]
         if yy <= 1984: m += ["help_w"]
         if yy == 1970: m += ["ss_w", "welf_w"]
-        if 1994 <= yy <= 2003: m += ["ucwc_hw,ssi,welfare,child_support,help (only as-reported amounts)",
+        if 1994 <= yy <= 2003: m += ["ucwc,ssi,welfare,child_support,help annualized from as-reported amounts",
                                      "ss is family total"]
-        if yy >= 1994: m += ["farm income and labor part of business income (not in labinc from 1994)"]
+        if yy >= 1994: m += ["farm income all to head; labor part = half of positive farm income"]
         miss.append(";".join(m))
     F["cgm_missing"] = miss
     return F
