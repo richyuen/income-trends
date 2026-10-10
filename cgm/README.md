@@ -64,6 +64,10 @@ Our variances are 3-34% higher (transitory) and 24-69% higher (permanent), with 
 - The late-career decline is steeper in our data for non-college households; that matters for the income a model household carries into retirement.
 - CGM's replacement rates are not reproducible from their stated income definition; we would rather estimate retirement income directly in step 3, with pension income if Richard requests it from the PSID.
 
+## Decisions for step 3 (Richard, 2026-10-10)
+- **Default sample drops observations with real CGM income under $2,000 (1992 dollars)**; the full sample stays as a robustness check.
+- Retirement income will be estimated with pension and annuity income from a fourth PSID extract (request list: `/mnt/project-files/notes/psid-extract4-guide.md`).
+
 ## Files
 | Path | What |
 |---|---|
