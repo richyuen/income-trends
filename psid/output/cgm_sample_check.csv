@@ -1,0 +1,4 @@
+educ_group,obs,units,Tbar,cgm_units,cgm_Tbar,share_nonpositive_dropped,cgm_share_zero_dropped
+no_high_school,9645,1139,8.47,1104,8.58,0.0033,0.00495
+high_school,28066,2919,9.61,2816,9.57,0.0033,0.00495
+college,12784,1134,11.27,1110,11.06,0.0033,0.00495
