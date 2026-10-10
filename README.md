@@ -4,7 +4,7 @@ Estimating the US labor income process (deterministic age profile of real labor 
 
 ## Layout
 - `cps/` CPS ASEC 1988-2026 person files (ages 15+, earnings, education, industry, occupation, hours, keys), validation against Census Table P-38, links between adjacent ASEC years. See `cps/README.md`.
-- `sipp/` SIPP person-year annual earnings panels (1996-2008 panels; 2014 panel; SIPP 2018-2025). See `sipp/README.md`.
+- `sipp/` SIPP person-year annual earnings, 1995-2024, linked within panel (1996, 2001, 2004, 2008 panels; 2014 panel; SIPP 2018-2025 files), with longitudinal weights and imputation flags. See `sipp/README.md`.
 - `cpi/` annual price indexes (CPI-U, C-CPI-U, PCE, and the Census income-table deflator), `cpi/data/price_indexes_annual.csv`.
 - `psid/` (to come) PSID code only. **Raw PSID files are never committed** (PSID conditions of use).
 
