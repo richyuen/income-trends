@@ -1,0 +1,45 @@
+source,measure,period,years,cut,group,peak_age,d_25_50,d_50_60,s2_perm,s2_trans,var_d1,var_d2,s2_perm_short,s2_trans_short,pair_years,method
+psid,head_earn,full,1969-2022,all,all,46,0.48436,-0.16404,0.019671,0.10824,0.17058,0.25016,0.043655,0.069545,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,full,1969-2022,education,college,45,1.0432,-0.14726,0.024157,0.10157,0.16264,0.24884,0.047863,0.06401,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,full,1969-2022,education,high_school,43,0.34161,-0.16925,0.014837,0.11123,0.1651,0.24051,0.040469,0.067973,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,full,1969-2022,education,no_high_school,42,0.21245,-0.24641,0.014465,0.12333,0.19659,0.27506,0.040481,0.085238,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p1,1969-1980,all,all,42,0.3653,-0.1425,0.010528,0.081908,0.14003,0.18393,0.023603,0.063066,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p1,1969-1980,education,college,42,0.77311,-0.21424,0.012748,0.068493,0.11495,0.15715,0.026085,0.048224,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p1,1969-1980,education,high_school,40,0.24841,-0.13492,0.011919,0.074564,0.13297,0.17415,0.022732,0.059472,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p1,1969-1980,education,no_high_school,45,0.26541,-0.11178,0.0020177,0.10904,0.17354,0.22151,0.020299,0.083417,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p2,1981-1992,all,all,45,0.51809,-0.19298,0.029278,0.082547,0.17147,0.2297,0.041233,0.068863,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p2,1981-1992,education,college,44,1.0583,-0.22018,0.029672,0.081473,0.159,0.22788,0.045867,0.061758,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p2,1981-1992,education,high_school,44,0.37601,-0.12983,0.028163,0.077961,0.16802,0.22085,0.037523,0.068456,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p2,1981-1992,education,no_high_school,40,0.1746,-0.28999,0.017768,0.11331,0.20794,0.25492,0.035405,0.089357,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p3,1993-2006,all,all,49,0.74166,-0.1175,0.02798,0.11996,0.22868,0.3107,0.046864,0.096434,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p3,1993-2006,education,college,48,1.2311,-0.080016,0.03033,0.13258,0.24016,0.34169,0.056267,0.1013,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p3,1993-2006,education,high_school,47,0.64025,-0.1466,0.026513,0.10627,0.21115,0.28481,0.041446,0.088467,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p3,1993-2006,education,no_high_school,47,0.39899,-0.14016,0.016768,0.15482,0.27415,0.33208,0.038598,0.12124,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p4,2007-2022,all,all,48,0.80087,-0.086371,0.025056,0.11479,,0.2688,0.032075,0.10232,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p4,2007-2022,education,college,46,1.1918,-0.080969,0.026452,0.094705,,0.23521,0.030739,0.086868,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p4,2007-2022,education,high_school,47,0.57606,-0.088245,0.023568,0.12025,,0.27639,0.031149,0.10705,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+psid,head_earn,p4,2007-2022,education,no_high_school,52,0.75221,-0.10681,0.013811,0.1755,,0.35176,0.034047,0.14183,,fixed effects; Carroll-Samwick lags 1-11 (22 for full)
+sipp,person_earn,era_new_2013_2024,2013-2024,all,all,52,1.109,-0.011173,0.056066,0.097724,0.25304,0.30454,0.056066,0.097724,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_new_2013_2024,2013-2024,education,college,46,1.0459,-0.12074,0.052138,0.093998,0.24131,0.28993,0.052137,0.093998,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_new_2013_2024,2013-2024,education,high_school,51,0.89275,-0.056255,0.05921,0.098746,0.25852,0.31228,0.05921,0.098746,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_new_2013_2024,2013-2024,education,no_high_school,60,0.77443,0.080353,0.029477,0.1145,0.25622,0.29245,0.029477,0.1145,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_old_1995_2013,1996-2012,all,all,43,0.56886,-0.18241,0.06241,0.042151,0.14632,0.20991,0.06241,0.04215,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_old_1995_2013,1996-2012,education,college,45,0.91202,-0.16705,0.067524,0.032839,0.13437,0.1984,0.067524,0.03284,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_old_1995_2013,1996-2012,education,high_school,40,0.34656,-0.26212,0.060365,0.04445,0.14821,0.21175,0.060365,0.044451,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+sipp,person_earn,era_old_1995_2013,1996-2012,education,no_high_school,38,0.074568,-0.10695,0.058664,0.054419,0.16576,0.22964,0.058663,0.054419,,synthetic-cohort profile; Carroll-Samwick lags 1-4
+cps,person_earn,p2,1987-1992,all,all,38,0.10206,-0.45173,0.013492,0.12758,0.26866,,,,1987-1992,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p2,1987-1992,education,college,41,0.52423,-0.46008,0.0072669,0.11794,0.24315,,,,1987-1992,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p2,1987-1992,education,high_school,37,-0.024479,-0.52551,0.011072,0.12579,0.26265,,,,1987-1992,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p2,1987-1992,education,no_high_school,27,-0.57986,-0.49315,0.0036996,0.17564,0.35499,,,,1987-1992,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p3,1993-2006,all,all,48,0.93491,-0.1229,0.012486,0.14094,0.29436,,,,1995-2007,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p3,1993-2006,education,college,48,1.2339,-0.12138,0.015712,0.14167,0.29906,,,,1995-2007,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p3,1993-2006,education,high_school,46,0.75887,-0.18296,0.005721,0.14021,0.28614,,,,1995-2007,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p3,1993-2006,education,no_high_school,50,0.55355,-0.097805,-0.0018544,0.16612,0.3304,,,,1995-2007,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p4,2007-2025,all,all,50,1.0284,-0.026504,0.004606,0.15998,0.32457,,,,2007-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p4,2007-2025,education,college,47,1.0434,-0.12359,0.0066593,0.15847,0.3236,,,,2007-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p4,2007-2025,education,high_school,48,0.76738,-0.040032,0.00059601,0.15878,0.31815,,,,2007-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,p4,2007-2025,education,no_high_school,60,0.6454,0.029466,-0.00070846,0.18974,0.37877,,,,2007-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,full,1987-2025,all,all,46,0.81657,-0.11465,0.0090131,0.14291,0.29484,,,,1987-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,full,1987-2025,education,college,46,1.0244,-0.15737,0.0099378,0.14155,0.29303,,,,1987-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,full,1987-2025,education,high_school,44,0.60883,-0.14717,0.0042861,0.14148,0.28725,,,,1987-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
+cps,person_earn,full,1987-2025,education,no_high_school,48,0.40648,-0.10664,0.00067877,0.17334,0.34735,,,,1987-2014,synthetic-cohort profile; Deaton-Paxson s2_perm; s2_trans = (Var(D1) - s2_perm)/2
