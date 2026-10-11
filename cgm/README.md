@@ -43,12 +43,19 @@ CGM's t-statistics match conventional (not clustered) standard errors; the clust
 | Growth from youngest age to peak | ×1.49 | ×1.53 | ×1.76 | ×1.86 | ×3.18 | ×3.04 |
 | Replacement rate (CGM income) | 0.44 | 0.890 | 0.37 | 0.682 | 0.29 | 0.939 |
 | Replacement rate (with pensions) | 0.58 | | 0.57 | | 0.52 | |
+| Replacement rate (CGM income / Figure 1 profile at 65) | 0.91 | 0.890 | 0.75 | 0.682 | 0.59 | 0.939 |
+| Replacement rate (with pensions / profile at 65; recommended) | 0.87 | | 0.78 | | 0.68 | |
 
 The rise to the peak matches closely. After 50 our profiles fall more for the two non-college groups: from peak to 65 the cubic drops 0.56 (no HS) and 0.36 (HS) log points, against 0.22 and 0.07 in CGM's cubic. College is closer (0.36 against 0.25, and 1.13 at 65 in both). Keeping only heads who are working or temporarily laid off (dropping the disabled and unemployed) lifts the age-65 value by 0.24 (no HS) and 0.15 (HS) but does not close the gap. Our levels match their Figure 1: exp(constant + age dummy) peaks at about 24,500 / 29,700 / 47,900 1992 dollars, against roughly 22,000 / 29,000 / 45,000 read off the figure.
 
 **Replacement rate: still below CGM's, even with pensions.** Ours is mean income in retirement over mean income in the last working year, for SRC male heads seen moving from work to retirement at 50+. Retired income is taken from the first income year fully in retirement. With CGM's income definition we get 0.44 / 0.37 / 0.29 for 1970-1992 (265 / 272 / 92 retirees) and 0.47 / 0.41 / 0.30 through 2023. A cross-sectional version (retired heads 65-75 against working heads 60-65) gives 0.41 / 0.36 / 0.26. CGM's income definition has no private pensions, so retired income is mostly Social Security.
 
 Adding head and spouse pensions, annuities, VA and IRA income (fourth PSID extract, `psid/scripts/build_pensions.py`) raises the rates to **0.58 / 0.57 / 0.52** for 1970-1992 and 0.60 / 0.60 / 0.54 through 2023. Retired income rises by a third (no HS) to four fifths (college), and the last working year barely moves. The cross-sectional version gives 0.51 / 0.50 / 0.43. The high-school rate is now near CGM's 0.68, but no HS and college stay well below their 0.89 and 0.94. Averaging each retiree's own ratio, instead of taking the ratio of the means, gives 0.75 / 0.62 / 0.62 (`repl_pens_mean_of_ratios`). That is closer for the two non-college groups, but not for college. The paper does not say how the rate was computed, so we keep the ratio of means with pensions as our estimate. Spouse pensions exist only from the 1985 survey; before that they count as zero.
+
+**Profile-based rates.** Another option divides retired income by the fitted age profile at 65, not by actual last-year income. Here retired income is the mean for retired SRC male heads aged 65-75 in surveys 1970-1992 (2,233 / 1,781 / 544 observations). CGM's Figure 1 draws retirement income this way: a flat line at the rate times the profile at 65.
+- **CGM income over the Figure 1 level**, exp(constant + profile at 65) with no marital term: **0.91 / 0.75 / 0.59**. This is the closest we get to CGM's 0.89 / 0.68. College stays far below their 0.94, and no definition we tried brings it there: adding pensions or family income (which includes asset income) raises college but overshoots the other two groups. CGM probably computed it this way, though the paper does not say. Note that this ratio mixes married and unmarried households in the numerator but not in the denominator.
+- **Consistent with a model in which retirement income is the rate times the profile at the last working age:** retired income with pensions over the profile at 65 at sample-mean marital status and family size gives **0.87 / 0.78 / 0.68** (`repl_prof65_pens`). Without pensions it gives 0.68 / 0.52 / 0.40. We recommend 0.87 / 0.78 / 0.68 for the life cycle model.
+- Counting the first retired wave (whose income year is partly before retirement) raises the panel rates by about 0.12 (0.69 / 0.69 / 0.66 with pensions). That wave is excluded on purpose.
 
 **Shock variances (Table 3).** `output/table3_variances.csv`, `output/var_by_lag.csv`
 
@@ -65,7 +72,7 @@ Our variances are 3-34% higher (transitory) and 24-69% higher (permanent), with 
 ## Takeaways for the life cycle model
 - CGM's age profiles and shock variances are reproduced closely in shape and roughly in size. The high-school group, CGM's benchmark (σ²_ε 0.0738, σ²_u 0.0106), comes out at 0.099 and 0.013 on our data, or 0.082 and 0.011 without incomes under $2,000.
 - The late-career decline is steeper in our data for non-college households; that matters for the income a model household carries into retirement.
-- CGM's replacement rates are not reproducible from their stated income definition. With pensions added, ours are 0.58 / 0.57 / 0.52 (1970-1992) and 0.60 / 0.60 / 0.54 through 2023. These are the defaults for the life cycle model; step 3 will look at how they change over time.
+- CGM's replacement rates are not reproducible from their stated income definition. With pensions added, panel rates are 0.58 / 0.57 / 0.52 (1970-1992). Measured against the age profile at 65, as CGM's Figure 1 does, CGM income gives 0.91 / 0.75 / 0.59, matching their no-HS and HS rates. For the life cycle model we recommend the profile-based rate with pensions, 0.87 / 0.78 / 0.68, because it is defined the way the model uses it.
 
 ## Decisions for step 3 (Richard, 2026-10-10)
 - **Default sample drops observations with real CGM income under $2,000 (1992 dollars)**; the full sample stays as a robustness check.

@@ -312,6 +312,19 @@ def main():
             repl_pens_mean_last_work=rp[YEARS]["mean_last_work"], repl_pens_mean_retired=rp[YEARS]["mean_retired"],
             repl_pens_1970_2023=rp[(1970, 2023)]["repl"], repl_pens_n_ret_1970_2023=rp[(1970, 2023)]["n_retirees"],
             repl_pens_xs=rp["xs"]["repl"], repl_pens_mean_of_ratios=rp[YEARS]["repl_indiv"])
+        # Profile-based rates: mean income of retired SRC male heads aged 65-75 (surveys 1970-1992, education
+        # group of the wave) over the fitted cubic profile at 65, exp(const + f3(65) [+ married, hhcomp at sample
+        # means]). This matches how a model uses the rate (retirement income = lambda x profile at retirement);
+        # the version without the marital term is the level drawn in CGM's Figure 1.
+        Rt = F[(F["sample"] == "SRC") & (F["sex_h"] == 1) & (F["emp_h8"] == 4) & F["year"].between(*YEARS)
+               & (F["educ3_h"] == e) & F["age_h"].between(65, 75)]
+        lvl65_fig = np.exp(st["const"] + fit3[-1])
+        lvl65 = lvl65_fig * np.exp(coef.loc["married", "coef"] * G["married"].mean() + coef.loc["hhcomp", "coef"] * G["hhcomp"].mean())
+        prof_cols = dict(repl_prof65_cgm=Rt["y_real"].mean() / lvl65, repl_prof65_cgm_fig1=Rt["y_real"].mean() / lvl65_fig,
+                         repl_prof65_n_ret=int(Rt["y_real"].notna().sum()))
+        if "y_real_pens" in F:
+            prof_cols.update(repl_prof65_pens=Rt["y_real_pens"].mean() / lvl65,
+                             repl_prof65_pens_fig1=Rt["y_real_pens"].mean() / lvl65_fig)
         ck = CGM_T2[name]
         cgm_curve = poly_eval([ck["c0"], ck["c1"], ck["c2"], ck["c3"]], prof.index)
         for a, v, f3, f5, fc in zip(prof.index, prof.to_numpy(), fit3, fit5, cgm_curve):
@@ -324,6 +337,7 @@ def main():
                        repl_1970_2023=rr[(1970, 2023)]["repl"], repl_n_ret_1970_2023=rr[(1970, 2023)]["n_retirees"],
                        repl_xs_ret65_75_vs_work60_65=rr["xs"]["repl"], repl_xs_n_ret=rr["xs"]["n_ret"],
                        **pens_cols,
+                       **prof_cols,
                        peak_age_p3=int(prof.index[np.argmax(fit3)]),
                        growth_to_peak_p3=float(np.exp(fit3.max() - fit3[0])),
                        cgm_peak_age=int(prof.index[np.argmax(cgm_curve)]),
