@@ -76,6 +76,7 @@ Our variances are 3-34% higher (transitory) and 24-69% higher (permanent), with 
 
 ## Decisions for step 3 (Richard, 2026-10-10)
 - **Default sample drops observations with real CGM income under $2,000 (1992 dollars)**; the full sample stays as a robustness check.
+- **Default replacement rates: 0.87 / 0.78 / 0.68** (no HS / HS / college; `repl_prof65_pens`, retired income with pensions over the age profile at 65). Richard, 2026-10-11.
 - Retirement income includes pensions, annuities, VA and IRA income from the fourth PSID extract (J366067; `psid/scripts/build_pensions.py`).
 
 ## Files
