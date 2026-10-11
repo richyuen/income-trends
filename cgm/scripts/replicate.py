@@ -60,6 +60,13 @@ def load():
     F["defl"] = F["income_year"].map(cpi / cpi.loc[BASE_YEAR])
     F["y_real"] = F["cgm_inc"] / F["defl"] / 1000.0          # thousands of 1992 dollars
     F["hhcomp"] = (F["fu_size"] - 1 - F["married"]).clip(lower=0)
+    # CGM income plus head and spouse pensions, annuities, VA and IRA income (psid/scripts/build_pensions.py;
+    # spouse pensions exist from the 1985 survey, so they count as 0 before). NaN if the head's amount is DK/NA.
+    pf = os.path.join(PANEL, "psid_pensions_family_year.parquet")
+    if os.path.exists(pf):
+        P = pd.read_parquet(pf, columns=["year", "fid", "pens_h", "pens_w"])
+        F = F.merge(P, on=["year", "fid"], how="left", validate="1:1")
+        F["y_real_pens"] = (F["cgm_inc"] + F["pens_h"] + F["pens_w"].fillna(0)) / F["defl"] / 1000.0
     F["person"] = F["pid68_h"].astype("int64") * 1000 + F["pn_h"].astype("int64")
     return F
 
@@ -135,8 +142,8 @@ def poly_eval(c, ages):
     return sum(c[p] * a ** p / 10 ** max(p - 1, 0) for p in range(len(c)))
 
 
-def replacement_rate(F, educ):
-    """Mean CGM income of retirees / mean CGM income in the last working year before retirement.
+def replacement_rate(F, educ, col="y_real"):
+    """Mean income (`col`: CGM income, or CGM income plus pensions) of retirees / mean CGM income in the last working year before retirement.
 
     Retirement = first SRC male-head wave j reported retired (emp_h8 == 4; 1970-1975 code 4 also covers the
     disabled) at age 50+, with the previous wave (at most two years earlier) not retired. Last working year =
@@ -145,7 +152,7 @@ def replacement_rate(F, educ):
     head's person-level modal group. Retired years are all later waves while still retired, through the same
     survey window and also through 2023 (reported separately).
     """
-    R = F[(F["sample"] == "SRC") & (F["sex_h"] == 1) & F["cgm_inc"].notna()].copy()
+    R = F[(F["sample"] == "SRC") & (F["sex_h"] == 1) & F[col].notna()].copy()
     R["educ_p"] = R["educ3_h_p"].fillna(R["educ3_h"])
     R = R.sort_values(["person", "year"])
     R["ret"] = R["emp_h8"] == 4
@@ -154,7 +161,7 @@ def replacement_rate(F, educ):
         W = R[R["year"].between(*window)]
         last_work, ret_inc = [], []
         for pid, g in W[W["educ_p"] == educ].groupby("person"):
-            yrs, ret, y = g["year"].to_numpy(), g["ret"].to_numpy(), g["y_real"].to_numpy()
+            yrs, ret, y = g["year"].to_numpy(), g["ret"].to_numpy(), g[col].to_numpy()
             age = g["age_h"].to_numpy()
             for j in range(1, len(g)):
                 gap = yrs[j] - yrs[j - 1]
@@ -169,12 +176,13 @@ def replacement_rate(F, educ):
                     break
         out[window] = dict(n_retirees=len(last_work), n_retired_obs=len(ret_inc),
                            mean_last_work=float(np.mean(last_work)), mean_retired=float(np.mean(ret_inc)),
-                           repl=float(np.mean(ret_inc) / np.mean(last_work)))
+                           repl=float(np.mean(ret_inc) / np.mean(last_work)),
+                           repl_indiv=float(np.mean(np.array(ret_inc) / np.array(last_work))))
     # Cross-sectional version: retired heads aged 65-75 vs working (sample-eligible) heads aged 60-65,
     # survey years 1970-1992, both by the head's education group in that wave.
     X = R[R["year"].between(*YEARS) & (R["educ3_h"] == educ) & (R["cgm_inc"] > 0)]
-    ret = X[X["ret"] & X["age_h"].between(65, 75)]["y_real"]
-    wrk = X[~X["emp_h8"].isin([4, 6, 7]) & X["age_h"].between(60, 65)]["y_real"]
+    ret = X[X["ret"] & X["age_h"].between(65, 75)][col]
+    wrk = X[~X["emp_h8"].isin([4, 6, 7]) & X["age_h"].between(60, 65)][col]
     out["xs"] = dict(repl=float(ret.mean() / wrk.mean()), n_ret=len(ret), n_wrk=len(wrk))
     return out
 
@@ -298,6 +306,12 @@ def main():
         c3, fit3 = poly_fit(prof, 3)
         c5, fit5 = poly_fit(prof, 5)
         rr = replacement_rate(F, e)
+        rp = replacement_rate(F, e, "y_real_pens") if "y_real_pens" in F else None
+        pens_cols = {} if rp is None else dict(
+            repl_pens_1970_1992=rp[YEARS]["repl"], repl_pens_n_retirees=rp[YEARS]["n_retirees"],
+            repl_pens_mean_last_work=rp[YEARS]["mean_last_work"], repl_pens_mean_retired=rp[YEARS]["mean_retired"],
+            repl_pens_1970_2023=rp[(1970, 2023)]["repl"], repl_pens_n_ret_1970_2023=rp[(1970, 2023)]["n_retirees"],
+            repl_pens_xs=rp["xs"]["repl"], repl_pens_mean_of_ratios=rp[YEARS]["repl_indiv"])
         ck = CGM_T2[name]
         cgm_curve = poly_eval([ck["c0"], ck["c1"], ck["c2"], ck["c3"]], prof.index)
         for a, v, f3, f5, fc in zip(prof.index, prof.to_numpy(), fit3, fit5, cgm_curve):
@@ -309,6 +323,7 @@ def main():
                        repl_mean_last_work=rr[YEARS]["mean_last_work"], repl_mean_retired=rr[YEARS]["mean_retired"],
                        repl_1970_2023=rr[(1970, 2023)]["repl"], repl_n_ret_1970_2023=rr[(1970, 2023)]["n_retirees"],
                        repl_xs_ret65_75_vs_work60_65=rr["xs"]["repl"], repl_xs_n_ret=rr["xs"]["n_ret"],
+                       **pens_cols,
                        peak_age_p3=int(prof.index[np.argmax(fit3)]),
                        growth_to_peak_p3=float(np.exp(fit3.max() - fit3[0])),
                        cgm_peak_age=int(prof.index[np.argmax(cgm_curve)]),

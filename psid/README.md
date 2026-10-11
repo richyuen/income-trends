@@ -10,6 +10,7 @@ Built 2026-10-10 from three PSID Data Center extracts ("All Individuals Data", 8
 | J366057 | Main extract, 1,625 variables: IDs, the individual-file items (interview number, sequence, relationship, age, education, employment status), and per wave head/wife age, sex, marital status, education, FU size, children, hours, labor income, wages, taxable income, family income, unemployment and workers' comp, Social Security, employment status, occupation, industry, family weight | `/tmp/it_psid/raw2/` |
 | J366052 | First extract, 703 variables: state, transfers (SSI, other welfare, child support, help from relatives) for head and wife, year of birth (1988+), family weights | `/tmp/it_psid/raw/` |
 | J366062 | Third extract, 453 variables: interview/sequence/relationship; farm income 1994-2023; head and wife labor part of business income 1994-2023; 1994-2003 as-reported transfers with their time-unit (`PER`) items (UC, WC, SSI, ADC/AFDC, other welfare, child support, help from relatives; head and wife); individual weights | `/tmp/it_psid/raw3/` |
+| J366067 | Fourth extract, 1,010 variables: head and wife/spouse pensions, annuities, VA pensions and IRA income (all years; 1994-2003 as amount plus time unit), head+wife total transfer income, wife's other transfer income, year retired, pension coverage on the current job, labor income and wage accuracy codes, whether head/spouse is a farmer (G1A, 1994+). Only the pension items are used so far (`build_pensions.py`). | `/tmp/it_psid/raw4/` |
 
 The three files have the same 85,536 rows in the same order (checked on ER30001 and ER30002 in `build.py`). J366052's 1968-2001 "occupation" items are not in this version of the file, so occupation comes from J366057.
 
@@ -28,6 +29,8 @@ The three files have the same 85,536 rows in the same order (checked on ER30001 
 | `output/sentinel_counts.csv` | Heads with a missing-data code or a top/bottom code, by year and concept. |
 | `output/break_1994_check.csv` | Share of heads aged 25-60 with zero head labor income by year, PSID definition vs the consistent definition, for male heads (all samples, SRC+SEO, hours > 0) and all heads; also the share with `cgm_inc` ≤ 0 under both. |
 | `output/annualize_check.csv` | The 1994-2003 annualized transfers (`_ann`, `_full`) against the PSID-generated annual amounts of 1985-1993 and 2005-2009: recipients, mean and median per recipient head, and how many units were assumed. |
+| `scripts/build_pensions.py RAW_DIR4 [OUT_DIR]` | Head and spouse pension, annuity, VA and IRA income from J366067, by family-year: `pens_h`, `pens_w`, components (`pens_h_va`, `_ret`, `_ann`, `_ira`, `_oth`), `ira_h`/`ira_w`, `othtr_w` (wife's other transfer income, 1976-1983). The variable map is the explicit `PEN` table in the script. Writes `/mnt/project-files/psid/psid_pensions_family_year.parquet`; merge on (`year`, `fid`), 1:1 with the family-year panel. |
+| `output/pensions_by_year.csv` | By survey year: families, share of heads and spouses with positive pension income, mean positive amount, head DK/NA count, the components available. |
 | `/mnt/project-files/psid/psid_family_year.parquet` | 320,456 family-years (one per family and wave, for the head), 164 columns, 20 MB. |
 | `/mnt/project-files/psid/psid_person_year.parquet` | 910,869 person-years (everyone in a responding FU in each wave), 20 columns, 8 MB. |
 
@@ -108,6 +111,11 @@ The codebook gives no annualization rule and the extracts have no months-receive
   - The biennial switch after 1997 is visible only as two-year gaps.
 - **Imputation mass points:** the modal positive head labor income holds 5.8% of positive values in 1997 ($26,000), 6.2% in 1999 ($29,000), 5.2% in 2003 and 4.3% in 2005, against about 2% in other years. These look like assigned values for missing data; they matter for transitory-variance estimates, so consider dropping them or requesting the accuracy codes. In 1997 and 1999 head wages exceed head labor income for 470 and 207 heads, as released.
 
+## Pension and annuity income (`build_pensions.py`)
+- **Head:** 1968-1969 bracket only (midpoints, as for help from relatives). 1970-1983 is one item, "other retirement pay, pensions, annuities"; VA pensions are a separate item from 1984. 1993 adds annuities/IRAs and other retirement income. 1994-2003 are as-reported amounts with a time unit, annualized like the transfers: Month 12, Two weeks 26, Week 52, Year 1. A positive amount with unit Other or DK/NA is taken as annual, and so is a per-period amount whose full-year value exceeds $250,000 (a handful per year). Amount DK/NA gives NaN, for 42-63 heads per wave. From 2005 the series uses PSID's generated annual amounts, with IRAs separate from 2013. In 2003 the "other pension" item (ER22168) is zero for everyone, as released.
+- **Spouse:** the series starts in the 1985 survey (VA plus other retirement, 1985-1992; pensions/annuities 1993-2011; VA, retirement, annuities, IRAs and other from 2013/2015). It is not available before 1985. `othtr_w` (wife's other transfer income, 1976-1983 except 1979) includes her pensions but also alimony and other items, so it is not counted.
+- **Check** (`output/pensions_by_year.csv`): 9-11% of heads report pension income in 1969-1992 and 11-13% from 1996. The mean positive amount rises steadily from $1,700 (1968) to $8,400 (1992), $16,600 (2003) and $31,500 (2023). There is no step at 1993-1994 or at 2005.
+
 ## Caveats
 - 1994-2003: the transfers in `cgm_inc` are annualized from as-reported amounts (assumed UC spell; see above), not PSID-generated annual amounts, and Social Security is a family total including other FU members.
 - The consistent labor income uses our 50/50 labor share of farm income and gives all farm income to the head; the farm-ownership attribution items are not in the extracts. Business labor income is PSID's own split.
@@ -123,5 +131,6 @@ python3 -I psid/scripts/varmap.py /tmp/it_psid/raw2/J366057.do /tmp/it_psid/raw/
     /tmp/it_psid/raw2/cb.txt /tmp/it_psid/raw/cb.txt /tmp/it_psid/raw3/cb.txt > psid/varmap.csv
 python3 -I psid/scripts/build.py /tmp/it_psid/raw /tmp/it_psid/raw2 /tmp/it_psid/raw3   # writes /mnt/project-files/psid/*.parquet
 python3 -I psid/scripts/validate.py                                           # writes psid/output/*.csv
+python3 -I psid/scripts/build_pensions.py /tmp/it_psid/raw4                    # pensions (cb.txt = pdftotext -layout of J366067_codebook.pdf)
 ```
 `cb.txt` is `pdftotext -layout` of each `J3660xx_codebook.pdf`. Run the scripts from outside the raw directories.

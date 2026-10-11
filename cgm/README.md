@@ -41,11 +41,14 @@ CGM's t-statistics match conventional (not clustered) standard errors; the clust
 | Age³/100 | 0.0016 | 0.0023 | 0.0015 | 0.0020 | 0.0027 | 0.0033 |
 | Peak age | 37 | 38 | 41 | 44 | 46 | 45 |
 | Growth from youngest age to peak | ×1.49 | ×1.53 | ×1.76 | ×1.86 | ×3.18 | ×3.04 |
-| Replacement rate | 0.44 | 0.890 | 0.37 | 0.682 | 0.29 | 0.939 |
+| Replacement rate (CGM income) | 0.44 | 0.890 | 0.37 | 0.682 | 0.29 | 0.939 |
+| Replacement rate (with pensions) | 0.58 | | 0.57 | | 0.52 | |
 
 The rise to the peak matches closely. After 50 our profiles fall more for the two non-college groups: from peak to 65 the cubic drops 0.56 (no HS) and 0.36 (HS) log points, against 0.22 and 0.07 in CGM's cubic. College is closer (0.36 against 0.25, and 1.13 at 65 in both). Keeping only heads who are working or temporarily laid off (dropping the disabled and unemployed) lifts the age-65 value by 0.24 (no HS) and 0.15 (HS) but does not close the gap. Our levels match their Figure 1: exp(constant + age dummy) peaks at about 24,500 / 29,700 / 47,900 1992 dollars, against roughly 22,000 / 29,000 / 45,000 read off the figure.
 
-**Replacement rate: not reproduced.** Ours is the mean CGM income in retirement over the mean in the last working year, for SRC male heads seen moving from work to retirement at 50+ (retired income from the first income year fully in retirement; 265 / 272 / 92 retirees in 1970-1992, 397 / 744 / 408 through 2023, which gives 0.47 / 0.41 / 0.30). A cross-sectional version (retired heads 65-75 against working heads 60-65) gives 0.41 / 0.36 / 0.26. CGM's 0.89 / 0.68 / 0.94 are about twice as high and do not rise with less education as Social Security replacement rates do. The CGM income definition has no private pensions or annuities, so retired income is mostly Social Security and a spouse's earnings. Their numbers probably include pension income, or use a different denominator; the paper does not say. Matching them would need head and wife pension and annuity income from the PSID (a fourth extract).
+**Replacement rate: still below CGM's, even with pensions.** Ours is mean income in retirement over mean income in the last working year, for SRC male heads seen moving from work to retirement at 50+. Retired income is taken from the first income year fully in retirement. With CGM's income definition we get 0.44 / 0.37 / 0.29 for 1970-1992 (265 / 272 / 92 retirees) and 0.47 / 0.41 / 0.30 through 2023. A cross-sectional version (retired heads 65-75 against working heads 60-65) gives 0.41 / 0.36 / 0.26. CGM's income definition has no private pensions, so retired income is mostly Social Security.
+
+Adding head and spouse pensions, annuities, VA and IRA income (fourth PSID extract, `psid/scripts/build_pensions.py`) raises the rates to **0.58 / 0.57 / 0.52** for 1970-1992 and 0.60 / 0.60 / 0.54 through 2023. Retired income rises by a third (no HS) to four fifths (college), and the last working year barely moves. The cross-sectional version gives 0.51 / 0.50 / 0.43. The high-school rate is now near CGM's 0.68, but no HS and college stay well below their 0.89 and 0.94. Averaging each retiree's own ratio, instead of taking the ratio of the means, gives 0.75 / 0.62 / 0.62 (`repl_pens_mean_of_ratios`). That is closer for the two non-college groups, but not for college. The paper does not say how the rate was computed, so we keep the ratio of means with pensions as our estimate. Spouse pensions exist only from the 1985 survey; before that they count as zero.
 
 **Shock variances (Table 3).** `output/table3_variances.csv`, `output/var_by_lag.csv`
 
@@ -62,11 +65,11 @@ Our variances are 3-34% higher (transitory) and 24-69% higher (permanent), with 
 ## Takeaways for the life cycle model
 - CGM's age profiles and shock variances are reproduced closely in shape and roughly in size. The high-school group, CGM's benchmark (σ²_ε 0.0738, σ²_u 0.0106), comes out at 0.099 and 0.013 on our data, or 0.082 and 0.011 without incomes under $2,000.
 - The late-career decline is steeper in our data for non-college households; that matters for the income a model household carries into retirement.
-- CGM's replacement rates are not reproducible from their stated income definition; we would rather estimate retirement income directly in step 3, with pension income if Richard requests it from the PSID.
+- CGM's replacement rates are not reproducible from their stated income definition. With pensions added, ours are 0.58 / 0.57 / 0.52 (1970-1992) and 0.60 / 0.60 / 0.54 through 2023. These are the defaults for the life cycle model; step 3 will look at how they change over time.
 
 ## Decisions for step 3 (Richard, 2026-10-10)
 - **Default sample drops observations with real CGM income under $2,000 (1992 dollars)**; the full sample stays as a robustness check.
-- Retirement income will be estimated with pension and annuity income from a fourth PSID extract (request list: `/mnt/project-files/notes/psid-extract4-guide.md`).
+- Retirement income includes pensions, annuities, VA and IRA income from the fourth PSID extract (J366067; `psid/scripts/build_pensions.py`).
 
 ## Files
 | Path | What |
@@ -74,7 +77,7 @@ Our variances are 3-34% higher (transitory) and 24-69% higher (permanent), with 
 | `scripts/replicate.py` | The whole replication; prints the tables. |
 | `data/ff_market_annual.csv` | Fama-French annual market excess return and T-bill rate, 1927-2025 (percent). |
 | `output/table1_fixed_effects.csv` | Table 1, ours and CGM's (`cgm_` columns), plus clustered t-statistics and the variance of the fixed effects. |
-| `output/table2_age_polynomial.csv` | Cubic (`p3_c0`...) and quintic (`p5_c0`...) coefficients, peak ages, growth to peak, replacement rates (three versions), CGM's values. |
+| `output/table2_age_polynomial.csv` | Cubic (`p3_c0`...) and quintic (`p5_c0`...) coefficients, peak ages, growth to peak, replacement rates (CGM income: panel 1970-1992, panel through 2023, cross-section; with pensions: `repl_pens_*`, including the mean of individual ratios), CGM's values. |
 | `output/table3_variances.csv` | Shock variances (22-point OLS, pooled, d ≥ 3), ρ (same-year and next-year returns), CGM's values. |
 | `output/age_profiles.csv` | Age dummies, cubic and quintic fits, CGM's cubic, and the level in thousands of 1992 dollars at sample means of marital status and family size. |
 | `output/fe_coefficients.csv` | Every fixed-effects coefficient with conventional and clustered SEs. |
