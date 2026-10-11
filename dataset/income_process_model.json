@@ -1,14 +1,39 @@
 {
-  "description": "CGM (2005) labor income process re-estimated from PSID; household labor income plus transfers, thousands of 1992 dollars (CPI-U); SRC male heads 20-65 (22-65 college); incomes under $2,000 (1992 $) dropped. Variances are in log points squared.",
+  "description": "CGM (2005) labor income process re-estimated from PSID; household labor income plus transfers, thousands of 1992 dollars (CPI-U); SRC male heads 20-65 (22-65 college); incomes under $2,000 (1992 $) dropped. Variances are in log points squared. Each set has one entry per education group and 'all', a single process for all households pooled over ages 20-65 (no education, cohort or other split).",
   "equation": "log Y = const + married*m + hhcomp*h + f(age) + v + e; v_t = v_{t-1} + u; Var(u)=s2_perm; Var(e)=s2_trans; retirement income = replacement_rate * exp(const + married*mean_married + hhcomp*mean_hhcomp + f(65))",
   "cpi_u_1992_to_2024": 2.2355778519169074,
   "replacement_rate_default": {
     "no_high_school": 0.87,
     "high_school": 0.78,
-    "college": 0.68
+    "college": 0.68,
+    "all": 0.69
   },
-  "replacement_rate_default_note": "Richard's choice (2026-10-11): retired income incl. pensions over the profile at 65, CGM window 1969-1991, full sample (cgm/README.md).",
+  "replacement_rate_default_note": "Richard's choice (2026-10-11): retired income incl. pensions over the profile at 65, CGM window 1969-1991, full sample (cgm/README.md). The pooled rate for all households (0.69) uses the same definition.",
   "baseline_1969_2022": {
+    "all": {
+      "age_range": [
+        20,
+        65
+      ],
+      "const": 2.64221,
+      "married": 0.526947,
+      "mean_married": 0.8435,
+      "hhcomp": -0.00973667,
+      "mean_hhcomp": 1.25543,
+      "profile_cubic": {
+        "c0": -1.92114,
+        "c1": 0.132519,
+        "c2": -0.0195337,
+        "c3": 0.000781379,
+        "form": "c0 + c1*age + c2*age^2/10 + c3*age^3/100"
+      },
+      "s2_perm": 0.0145619,
+      "s2_perm_se": 0.000614582,
+      "s2_trans": 0.0931438,
+      "s2_trans_se": 0.00265429,
+      "replacement_rate_estimated": 0.722794,
+      "level_65_k1992": 38.8602
+    },
     "no_high_school": {
       "age_range": [
         20,
@@ -83,6 +108,30 @@
     }
   },
   "recent_2007_2022": {
+    "all": {
+      "age_range": [
+        20,
+        65
+      ],
+      "const": 2.1503,
+      "married": 0.562689,
+      "mean_married": 0.800388,
+      "hhcomp": -0.00827612,
+      "mean_hhcomp": 1.14538,
+      "profile_cubic": {
+        "c0": -3.27822,
+        "c1": 0.246807,
+        "c2": -0.04214,
+        "c3": 0.0022903,
+        "form": "c0 + c1*age + c2*age^2/10 + c3*age^3/100"
+      },
+      "s2_perm": 0.0223495,
+      "s2_perm_se": 0.0016898,
+      "s2_trans": 0.086893,
+      "s2_trans_se": 0.00415395,
+      "replacement_rate_estimated": 0.84665,
+      "level_65_k1992": 46.572
+    },
     "no_high_school": {
       "age_range": [
         20,
@@ -157,6 +206,30 @@
     }
   },
   "cgm_window_1969_1991": {
+    "all": {
+      "age_range": [
+        20,
+        65
+      ],
+      "const": 2.77258,
+      "married": 0.445155,
+      "mean_married": 0.873782,
+      "hhcomp": -0.019495,
+      "mean_hhcomp": 1.35393,
+      "profile_cubic": {
+        "c0": -1.8411,
+        "c1": 0.128745,
+        "c2": -0.0194219,
+        "c3": 0.000713092,
+        "form": "c0 + c1*age + c2*age^2/10 + c3*age^3/100"
+      },
+      "s2_perm": 0.0135318,
+      "s2_perm_se": 0.00123292,
+      "s2_trans": 0.0798519,
+      "s2_trans_se": 0.00443892,
+      "replacement_rate_estimated": 0.67199,
+      "level_65_k1992": 30.4181
+    },
     "no_high_school": {
       "age_range": [
         20,

@@ -5,8 +5,8 @@ Writes
   dataset/income_process_parameters.csv  long format: one row per period x cut x group x parameter (value, SE, unit)
   dataset/age_profiles.csv               deterministic income by age 20-65 for every period x cut x group:
                                          log level and level in thousands of 1992 and 2024 dollars (CPI-U)
-  dataset/income_process_model.json      the recommended sets (baseline 1969-2022 and "today" 2007-2022 by
-                                         education) in the shape a model reads: profile, shocks, replacement rate
+  dataset/income_process_model.json      the recommended sets (baseline 1969-2022 and "today" 2007-2022, pooled
+                                         and by education) in the shape a model reads: profile, shocks, replacement rate
 
 Model (CGM 2005, Eq. 1-3): log Y_it = const + married*m + hhcomp*h + f(age) + v_it + e_it, v_it = v_i,t-1 + u_it,
 f(age) = c0 + c1*age + c2*age^2/10 + c3*age^3/100; Var(u) = s2_perm, Var(e) = s2_trans; retirement income =
@@ -23,6 +23,7 @@ import pandas as pd
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "dataset")
 DEFAULT_REPL = {"no_high_school": 0.87, "high_school": 0.78, "college": 0.68}   # Richard, 2026-10-11
+DEFAULT_REPL_ALL = 0.69   # same definition (CGM window 1969-1991, full sample) for all households pooled
 
 PARAMS = [  # column, parameter name, unit, description
     ("const", "const", "log 1992 $000", "Fixed-effects constant (Stata xtreg, fe convention)"),
@@ -83,8 +84,8 @@ def main():
 
     def block(period):
         out = {}
-        for g in ["no_high_school", "high_school", "college"]:
-            r = P[(P["period"] == period) & (P["cut"] == "education") & (P["group"] == g)].iloc[0]
+        for g in ["all", "no_high_school", "high_school", "college"]:
+            r = P[(P["period"] == period) & (P["cut"] == ("all" if g == "all" else "education")) & (P["group"] == g)].iloc[0]
             out[g] = dict(
                 age_range=[int(r["age_min"]), int(r["age_max"])],
                 const=r["const"], married=r["married"], mean_married=r["mean_married"], hhcomp=r["hhcomp"],
@@ -98,13 +99,16 @@ def main():
     model = {
         "description": "CGM (2005) labor income process re-estimated from PSID; household labor income plus transfers, "
                        "thousands of 1992 dollars (CPI-U); SRC male heads 20-65 (22-65 college); incomes under $2,000 "
-                       "(1992 $) dropped. Variances are in log points squared.",
+                       "(1992 $) dropped. Variances are in log points squared. Each set has one entry per education "
+                       "group and 'all', a single process for all households pooled over ages 20-65 (no education, "
+                       "cohort or other split).",
         "equation": "log Y = const + married*m + hhcomp*h + f(age) + v + e; v_t = v_{t-1} + u; Var(u)=s2_perm; Var(e)=s2_trans; "
                     "retirement income = replacement_rate * exp(const + married*mean_married + hhcomp*mean_hhcomp + f(65))",
         "cpi_u_1992_to_2024": to2024,
-        "replacement_rate_default": DEFAULT_REPL,
+        "replacement_rate_default": DEFAULT_REPL | {"all": DEFAULT_REPL_ALL},
         "replacement_rate_default_note": "Richard's choice (2026-10-11): retired income incl. pensions over the profile at 65, "
-                                         "CGM window 1969-1991, full sample (cgm/README.md).",
+                                         "CGM window 1969-1991, full sample (cgm/README.md). "
+                                         "The pooled rate for all households (0.69) uses the same definition.",
         "baseline_1969_2022": block("full"),
         "recent_2007_2022": block("p4"),
         "cgm_window_1969_1991": block("cgm"),

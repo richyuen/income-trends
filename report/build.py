@@ -194,6 +194,7 @@ def load():
         cps_d1=pd.read_csv(os.path.join(EXT, "cps_var_d1_by_year.csv")),
         psid_d1=pd.read_csv(os.path.join(EXT, "psid_var_d1_by_year.csv")),
         prof=pd.read_csv(os.path.join(ROOT, "dataset", "age_profiles.csv")),
+        src_prof=pd.concat([pd.read_csv(os.path.join(EXT, f"{x}_profiles.csv")).assign(source=x) for x in ("psid", "cps", "sipp")]),
         t1=pd.read_csv(os.path.join(CGM, "table1_fixed_effects.csv")),
         t2=pd.read_csv(os.path.join(CGM, "table2_age_polynomial.csv")),
         t3=pd.read_csv(os.path.join(CGM, "table3_variances.csv")),
@@ -419,6 +420,31 @@ def build():
                 out.append((x - 1, np.nan))
             out.append((x, y))
         return out
+    SP = D["src_prof"]
+    def rel25(src, measure, period):                   # fitted cubic, income relative to age 25
+        q = SP[(SP["source"] == src) & (SP["measure"] == measure) & (SP["period"] == period) & (SP["cut"] == "all")]
+        if src == "psid":
+            q = q[q["sample"] == "drop_lt2k"]
+        q = q.set_index("age")["cubic"]
+        return [(a, float(np.exp(q.loc[a] - q.loc[25]))) for a in q.index if a >= 25]
+    panels = [("1993-2006", [("PSID 1993-2006", "s1", rel25("psid", "head_earn", "p3")),
+                             ("CPS 1993-2006", "s2", rel25("cps", "person_earn", "p3")),
+                             ("SIPP 1996-2012", "s3", rel25("sipp", "person_earn", "era_old_1995_2013"))]),
+              ("2007 on", [("PSID 2007-2022", "s1", rel25("psid", "head_earn", "p4")),
+                           ("CPS 2007-2025", "s2", rel25("cps", "person_earn", "p4")),
+                           ("SIPP 2013-2024", "s3", rel25("sipp", "person_earn", "era_new_2013_2024"))])]
+    pc = '<div class="pair">' + "".join(
+        f'<div><p class="sub">{t}</p>' + line_chart([dict(name=n, cls=c, pts=pts) for n, c, pts in ser], "Age", "Relative to age 25",
+                                                     ydom=(0.8, 3.2), yfmt="{:.1f}", tipx="age {:.0f}", w=430, label_ends=False) + "</div>"
+        for t, ser in panels) + "</div>"
+    pdt = pd.DataFrame({"Age": range(25, 66, 5)})
+    for _, ser in panels:
+        for n, _, pts in ser:
+            d = dict(pts); pdt[n] = [d.get(a) for a in pdt["Age"]]
+    figp = figure("Age profile of men's earnings in three surveys, relative to age 25", pc,
+                  "Men aged 20-65 with earnings of at least $2,000 (1992 dollars), own earnings (PSID: head's labor income); fitted cubic in age, 1.0 = earnings at 25. PSID: fixed-effects profile, which follows the same men as they age. CPS and SIPP: synthetic cohorts, age effects net of birth-year effects estimated on cell means, because their panels are too short to follow anyone for long. Household income in the PSID has the same shape (Figure 3).",
+                  pdt, list(pdt.columns), {c: f2 for c in pdt.columns[1:]},
+                  leg=legend([("PSID", "s1", False), ("CPS ASEC", "s2", False), ("SIPP", "s3", False)]))
     vser = [dict(name="PSID", cls="s1", pts=gaps(ps["income_year_start"], ps["var_d1"])),
             dict(name="CPS ASEC", cls="s2", pts=gaps(cd["income_year"], cd["var_d1"])),
             dict(name="SIPP 1996-2008 panels", cls="s3", pts=list(zip(old["mid"], old["var"]))),
@@ -439,25 +465,27 @@ def build():
     srct = pd.DataFrame(srcrows)
     B.append(sec("sources", "Checking against SIPP and CPS ASEC", f"""
 <p>SIPP and CPS measure each person's own earnings, so the comparison uses men's own earnings in all three surveys (for the PSID, the head's labor income). All three show the same changes: income rising faster to midlife, a smaller decline after 50, and larger year-to-year swings over time. Levels differ for known reasons. The CPS follows addresses, not people, and its one-year changes include matching and reporting error. SIPP's 2014 redesign raised measured volatility by about 70%, so its two designs are never pooled.</p>
+<p>The age profiles agree on the rise and differ on the decline (Figure 10). In every survey earnings roughly double or more between 25 and 50. After 50 the PSID profile falls, while the CPS and SIPP profiles since 2007 stay near their peak to 65. The PSID follows the same men as they age; CPS and SIPP compare different men at each age, and the men still earning at 60-65 are disproportionately those with high earnings. That selection most likely flattens the survey profiles late in life, so for a model of one worker's path the PSID profile is the right one.</p>
 <p>The split between permanent and transitory risk needs long panels. SIPP follows people for 2 to 4 years, and with only those short lags the PSID itself gives a permanent variance 1.3 to 2.2 times its long-lag estimate. The CPS method (the rise in earnings inequality with age within a cohort) gives lower values. We therefore take the shock variances from the PSID and use SIPP and CPS as checks on the profile and on volatility.</p>
+{figp}
 {fig10}
 {tab("Men's own earnings in three surveys", srct, list(srct.columns), "Growth and change are ratios of fitted earnings. PSID and SIPP σ²u, σ²ε: Carroll-Samwick (PSID lags up to 11, SIPP up to 4). CPS σ²u: within-cohort variance growth with age (Deaton-Paxson), σ²ε from the variance of matched one-year changes. “lags 1-4” refits PSID with only the lags a SIPP panel allows.", {c: (f2 if c.startswith(("Growth", "Change")) else f3) for c in srct.columns[1:]})}"""))
 
     # ---- section 10 parameters
     pr = []
     for p, plab in [("full", "Baseline, 1969-2022"), ("p4", "Recent, 2007-2022")]:
-        for g, gl, _ in EDU:
-            r = M[(M["period"] == p) & (M["cut"] == "education") & (M["group"] == g)].iloc[0]
+        for g, gl, _ in [("all", "All, pooled", None)] + EDU:
+            r = M[(M["period"] == p) & (M["cut"] == ("all" if g == "all" else "education")) & (M["group"] == g)].iloc[0]
             pr.append({"Set": plab, "Education": gl, "const": r["const"], "c0": r["p3_c0"], "c1": r["p3_c1"], "c2": r["p3_c2"], "c3": r["p3_c3"],
                        "married": r["married"], "hhcomp": r["hhcomp"], "σ²u": r["s2_perm"], "σ²ε": r["s2_trans"],
-                       "λ": {"no_high_school": 0.87, "high_school": 0.78, "college": 0.68}[g]})
+                       "λ": {"all": 0.69, "no_high_school": 0.87, "high_school": 0.78, "college": 0.68}[g]})
     pr = pd.DataFrame(pr)
     B.append(sec("parameters", "Parameters for the life cycle model", f"""
-<p>The recommended baseline is the PSID estimate by education over all years, 1969-2022, with the replacement rates chosen for the project. For a model of today's workers, the 2007-2022 set has a steeper profile and, for the less educated, larger transitory shocks. Every other cut and period is in the dataset.</p>
+<p>The recommended baseline is the PSID estimate by education over all years, 1969-2022, with the replacement rates chosen for the project. For a model of today's workers, the 2007-2022 set has a steeper profile and, for the less educated, larger transitory shocks. For a model without education types, use the pooled rows: one process for all households over ages 20-65, with no split by education, cohort or anything else, and a replacement rate of 0.69 measured the same way as the education rates. Every other cut and period is in the dataset.</p>
 <div class="eq small">log Y = const + married·m + hhcomp·h + c0 + c1·age + c2·age²/10 + c3·age³/100 + v + ε<br>retirement income = λ · exp(const + married·m̄ + hhcomp·h̄ + f(65))</div>
 {tab("Recommended parameter sets (income in thousands of 1992 dollars)", pr, list(pr.columns), "m = 1 with a spouse present; h = family members besides head and spouse. λ: replacement rate. Sample means of m and h, standard errors and fitted income by age are in the dataset.", {c: (lambda v: f"{v:.4f}") for c in ["const", "c0", "c1", "c2", "c3", "married", "hhcomp", "σ²u", "σ²ε"]} | {"λ": f2})}
 <table class="files"><tbody>
-<tr><td><code>dataset/income_process_model.json</code></td><td>The baseline, recent and CGM-years sets by education, ready for a model to read.</td></tr>
+<tr><td><code>dataset/income_process_model.json</code></td><td>The baseline, recent and CGM-years sets, pooled and by education, ready for a model to read.</td></tr>
 <tr><td><code>dataset/income_process_parameters.csv</code></td><td>Every parameter for every cut (all, education, industry, income quintile, cohort) and period, with standard errors and units.</td></tr>
 <tr><td><code>dataset/age_profiles.csv</code></td><td>Fitted income at each age 20-65 for every cut and period, in log points and thousands of 1992 and 2024 dollars.</td></tr>
 <tr><td><code>extend/output/</code></td><td>All estimates, including the full sample, the head-earnings measure, SIPP and CPS, rolling windows and the variance at each lag.</td></tr>
@@ -596,6 +624,7 @@ td.l{text-align:left}
 table.files{margin-top:1.4rem}
 table.files td{vertical-align:top}
 table.files td:first-child{white-space:nowrap}
+@media (max-width:560px){table.files td:first-child{white-space:normal;word-break:break-all}}
 ol.refs li{margin:.4rem 0;font-size:.95rem}
 #tip{position:fixed;pointer-events:none;background:var(--tip-bg);color:var(--tip-fg);font:500 .8rem/1.35 var(--body);padding:.35rem .55rem;border-radius:4px;z-index:9;max-width:280px}
 @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
