@@ -10,7 +10,7 @@ Model (CGM 2005):
 
 | File | What |
 |---|---|
-| `income_process_model.json` | Ready-to-use sets by education: `baseline_1969_2022` (recommended), `recent_2007_2022`, `cgm_window_1969_1991`; each with the profile cubic, constant, controls and their means, shock variances with bootstrap SEs, estimated replacement rate and fitted income at 65. `replacement_rate_default` holds the project's choice, 0.87 / 0.78 / 0.68. |
+| `income_process_model.json` | Ready-to-use sets, each for all households pooled (`all`, ages 20-65, no education or cohort split) and by education: `baseline_1969_2022` (recommended), `recent_2007_2022`, `cgm_window_1969_1991`; each with the profile cubic, constant, controls and their means, shock variances with bootstrap SEs, estimated replacement rate and fitted income at 65. `replacement_rate_default` holds the project's choice, 0.87 / 0.78 / 0.68, and 0.69 for the pooled set (same definition). |
 | `income_process_parameters.csv` | Long format: one row per period x cut x group x parameter, with value, SE (shock variances), unit and description. Cuts: all, education, industry, income_q (lifetime rank), income_q_init (initial rank; use for variances), cohort (all years only). Periods: cgm 1969-1991, full 1969-2022, p1 1969-1980, p2 1981-1992, p3 1993-2006, p4 2007-2022 (income years). |
 | `age_profiles.csv` | Fitted income at each age for every period x cut x group: log level, thousands of 1992 dollars and of 2024 dollars (CPI-U factor 2.236), with marital status and household size at sample means. |
 
