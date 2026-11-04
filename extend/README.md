@@ -101,6 +101,24 @@ python3 -I extend/scripts/compare.py          # seconds; writes source_compare.c
   - The CPS profile for 1987-1992 is an artifact: six years of synthetic cohorts that include the 1990-91 recession and falling real wages.
 - **Permanent risk cannot be pinned down from short panels.** With only lags 1-4, the PSID gives 0.032-0.047, 1.3-2.2 times its long-lag estimate. SIPP panels (2-4 years per person) allow only those short lags and give 0.056-0.062. The CPS cross-section method (Deaton-Paxson: the rise of within-cohort variance with age) gives 0.005-0.013. So the split between permanent and transitory risk should come from the PSID's long panel. SIPP and CPS serve as checks on the profile, on the total variance of changes and on the trend.
 
+### 5. AR(1) alternative: the Choukhmane and de Silva specification (`ar1_estimates.csv`, `ar1_moments.csv`)
+`scripts/ar1_process.py` (needs scipy; PSID about 25 minutes, SIPP a few; `python3 -I extend/scripts/ar1_process.py [PANEL_DIR] [psid] [sipp]`) estimates the earnings process of Choukhmane and de Silva (JF 2026; NBER w32476 Appendix D.4, Table A3) on our samples: residual log income (the fixed-effects profile above, demeaned by year) = eta + iota, eta starting at age 20 (22 college) with variance `s2_init`, then eta_t = rho*eta_{t-1} + xi, Var(xi) = `s2_innov`; iota serially uncorrelated (`s2_me`, transitory shock plus measurement error). Equally weighted minimum distance on autocovariances by years since start age and lag (PSID lags up to 20 for the long periods, 14 for 2007-2022; SIPP up to 3), Poisson bootstrap SEs by person (100 draws), several starting values. Specs: `cds` (theirs), `fe` (adds a fixed effect; it collapses to `cds` in almost every sample), `rw` (rho = 1, the CGM random walk in the same moment framework).
+
+| Sample | rho (SE) | s2_init | s2_innov | s2_me | Half-life | Fit gain vs rw |
+|---|---|---|---|---|---|---|
+| PSID household, 1969-2022 | 0.983 (0.003) | 0.116 | 0.0172 | 0.144 | 39 | 36% |
+| PSID household, 1969-1991 | 0.983 (0.005) | 0.100 | 0.0154 | 0.101 | 40 | 24% |
+| PSID household, 2007-2022 | 0.971 (0.005) | 0.213 | 0.0312 | 0.125 | 24 | 32% |
+| PSID men's own earnings, 1969-2022 | 0.981 (0.003) | 0.119 | 0.0204 | 0.176 | 37 | 36% |
+| SIPP 1996 job stayers (main-job earnings) | 1.000 | 0.196 | 0.0064 | 0.068 | inf | 0% |
+| Choukhmane-de Silva (SIPP 1996 stayers) | 0.933 | 0.175 | 0.0298 | 0.054 | 10 | |
+
+- **Shocks are very persistent but not permanent in the PSID** (rho 0.97-0.98 in every period, measure and education group), and the AR(1) fits the decline of covariances with the lag much better than a random walk.
+- **SIPP cannot pin rho down.** With lags of at most 3 years, rho and s2_innov trade off along a ridge: our 1996 stayers give rho = 1 with s2_innov = 0.0064, and Choukhmane-de Silva's (0.933, 0.030) implies nearly the same rise of variance with age. Use the PSID values.
+- **Sawtooth in the long PSID periods:** odd lags come only from the annual waves before 1997, even lags from all years, and residual variance rose over time, so odd-lag covariances sit below even ones in 1969-2022. The 1969-1991 window (all lags annual) has no such pattern and gives the same rho.
+- **Both processes give a similar spread by 65** (Var eta 0.42 AR(1), 0.43 random walk, household 1969-2022), but the AR(1)'s annual innovations are 2.5 times larger and fade with a half-life of about 40 years. `s2_me` is larger than CGM's s2_trans because it absorbs everything that does not persist one year.
+- In the dataset (`dataset/`): `ar1_*` rows in the long CSV and an `ar1_alternative` block per set in the model JSON (PSID CGM income, `cds` spec).
+
 ## Recommendations for the life cycle model
 - **Baseline: PSID, CGM income, default sample, by education, all years 1969-2022** (`parameters.csv`, `period = full`):
   - σ²_u = 0.013 / 0.011 / 0.018

@@ -48,6 +48,13 @@ PARAMS = [  # column, parameter name, unit, description
     ("n_obs", "n_obs", "count", "Person-years"),
 ]
 SE = {"s2_perm": "s2_perm_se", "s2_trans": "s2_trans_se", "married": None}
+# AR(1) alternative (Choukhmane and de Silva spec), extend/scripts/ar1_process.py, PSID CGM income, spec "cds"
+AR1 = [  # column, parameter name, unit, description
+    ("rho", "ar1_rho", "per year", "AR(1) alternative: persistence of the persistent component eta"),
+    ("s2_init", "ar1_s2_init", "log points squared", "AR(1) alternative: variance of eta at the start age (20; 22 college)"),
+    ("s2_innov", "ar1_s2_innov", "log points squared", "AR(1) alternative: variance of the annual innovation to eta"),
+    ("s2_me", "ar1_s2_me", "log points squared", "AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)"),
+]
 
 
 def cubic(c, age):
@@ -69,6 +76,13 @@ def main():
             rows.append(dict(source="psid", income="cgm_household", sample="drop_lt2k_1992usd", period=r["period"],
                              years=r["years"], cut=r["cut"], group=r["group"], parameter=name, value=r[col],
                              se=r[se_col] if se_col else np.nan, unit=unit, description=desc))
+    A = pd.read_csv(os.path.join(ROOT, "extend", "output", "ar1_estimates.csv"))
+    A = A[(A["source"] == "psid") & (A["measure"] == "cgm") & (A["spec"] == "cds")]
+    for _, r in A.iterrows():
+        for col, name, unit, desc in AR1:
+            rows.append(dict(source="psid", income="cgm_household", sample="drop_lt2k_1992usd", period=r["period"],
+                             years=r["years"], cut=r["cut"], group=r["group"], parameter=name, value=r[col],
+                             se=r[f"{col}_se"], unit=unit, description=desc))
     L = pd.DataFrame(rows)
     L.to_csv(os.path.join(OUT, "income_process_parameters.csv"), index=False, float_format="%.6g")
 
@@ -94,6 +108,13 @@ def main():
                                    form="c0 + c1*age + c2*age^2/10 + c3*age^3/100"),
                 s2_perm=r["s2_perm"], s2_perm_se=r["s2_perm_se"], s2_trans=r["s2_trans"], s2_trans_se=r["s2_trans_se"],
                 replacement_rate_estimated=r["repl_prof65_pens"], level_65_k1992=r["level65_k1992"])
+            a = A[(A["period"] == period) & (A["cut"] == ("all" if g == "all" else "education")) & (A["group"] == g)]
+            if len(a):
+                a = a.iloc[0]
+                out[g]["ar1_alternative"] = dict(
+                    rho=a["rho"], rho_se=a["rho_se"], s2_init=a["s2_init"], s2_init_se=a["s2_init_se"],
+                    s2_innov=a["s2_innov"], s2_innov_se=a["s2_innov_se"], s2_me=a["s2_me"], s2_me_se=a["s2_me_se"],
+                    start_age=22 if g == "college" else 20)
         return out
 
     model = {
@@ -109,6 +130,11 @@ def main():
         "replacement_rate_default_note": "Richard's choice (2026-10-11): retired income incl. pensions over the profile at 65, "
                                          "CGM window 1969-1991, full sample (cgm/README.md). "
                                          "The pooled rate for all households (0.69) uses the same definition.",
+        "ar1_alternative_note": "Optional replacement for the random walk, same profile: log Y = const + controls + f(age) "
+                                "+ eta + iota; eta = s2_init draw at start_age, then eta_t = rho*eta_{t-1} + xi, "
+                                "Var(xi) = s2_innov; Var(iota) = s2_me (transitory shock plus measurement error). "
+                                "Specification of Choukhmane and de Silva (JF 2026); minimum distance on PSID "
+                                "autocovariances by age and lag (extend/scripts/ar1_process.py). For 'all', start_age 20 (college members start at 22).",
         "baseline_1969_2022": block("full"),
         "recent_2007_2022": block("p4"),
         "cgm_window_1969_1991": block("cgm"),
