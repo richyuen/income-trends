@@ -9,6 +9,7 @@
     "all": 0.69
   },
   "replacement_rate_default_note": "Richard's choice (2026-10-11): retired income incl. pensions over the profile at 65, CGM window 1969-1991, full sample (cgm/README.md). The pooled rate for all households (0.69) uses the same definition.",
+  "ar1_alternative_note": "Optional replacement for the random walk, same profile: log Y = const + controls + f(age) + eta + iota; eta = s2_init draw at start_age, then eta_t = rho*eta_{t-1} + xi, Var(xi) = s2_innov; Var(iota) = s2_me (transitory shock plus measurement error). Specification of Choukhmane and de Silva (JF 2026); minimum distance on PSID autocovariances by age and lag (extend/scripts/ar1_process.py). For 'all', start_age 20 (college members start at 22).",
   "baseline_1969_2022": {
     "all": {
       "age_range": [
@@ -32,7 +33,18 @@
       "s2_trans": 0.0931438,
       "s2_trans_se": 0.00265429,
       "replacement_rate_estimated": 0.722794,
-      "level_65_k1992": 38.8602
+      "level_65_k1992": 38.8602,
+      "ar1_alternative": {
+        "rho": 0.982582,
+        "rho_se": 0.00278785,
+        "s2_init": 0.116454,
+        "s2_init_se": 0.0102282,
+        "s2_innov": 0.0172474,
+        "s2_innov_se": 0.00142995,
+        "s2_me": 0.143971,
+        "s2_me_se": 0.00471377,
+        "start_age": 20
+      }
     },
     "no_high_school": {
       "age_range": [
@@ -56,7 +68,18 @@
       "s2_trans": 0.109152,
       "s2_trans_se": 0.0063654,
       "replacement_rate_estimated": 0.847106,
-      "level_65_k1992": 21.0175
+      "level_65_k1992": 21.0175,
+      "ar1_alternative": {
+        "rho": 0.977494,
+        "rho_se": 0.00503782,
+        "s2_init": 0.179953,
+        "s2_init_se": 0.0328353,
+        "s2_innov": 0.0140165,
+        "s2_innov_se": 0.00251648,
+        "s2_me": 0.15053,
+        "s2_me_se": 0.00933661,
+        "start_age": 20
+      }
     },
     "high_school": {
       "age_range": [
@@ -80,7 +103,18 @@
       "s2_trans": 0.0949005,
       "s2_trans_se": 0.00332097,
       "replacement_rate_estimated": 0.777584,
-      "level_65_k1992": 34.9834
+      "level_65_k1992": 34.9834,
+      "ar1_alternative": {
+        "rho": 0.974041,
+        "rho_se": 0.00482531,
+        "s2_init": 0.0910196,
+        "s2_init_se": 0.00990422,
+        "s2_innov": 0.0146297,
+        "s2_innov_se": 0.00181646,
+        "s2_me": 0.13274,
+        "s2_me_se": 0.0054855,
+        "start_age": 20
+      }
     },
     "college": {
       "age_range": [
@@ -104,7 +138,18 @@
       "s2_trans": 0.0848111,
       "s2_trans_se": 0.00480379,
       "replacement_rate_estimated": 0.721548,
-      "level_65_k1992": 62.6688
+      "level_65_k1992": 62.6688,
+      "ar1_alternative": {
+        "rho": 0.982699,
+        "rho_se": 0.00695809,
+        "s2_init": 0.0947942,
+        "s2_init_se": 0.0179695,
+        "s2_innov": 0.0151995,
+        "s2_innov_se": 0.00301612,
+        "s2_me": 0.162418,
+        "s2_me_se": 0.0113058,
+        "start_age": 22
+      }
     }
   },
   "recent_2007_2022": {
@@ -130,7 +175,18 @@
       "s2_trans": 0.086893,
       "s2_trans_se": 0.00415395,
       "replacement_rate_estimated": 0.84665,
-      "level_65_k1992": 46.572
+      "level_65_k1992": 46.572,
+      "ar1_alternative": {
+        "rho": 0.971155,
+        "rho_se": 0.00452081,
+        "s2_init": 0.21288,
+        "s2_init_se": 0.0220592,
+        "s2_innov": 0.0311549,
+        "s2_innov_se": 0.00388291,
+        "s2_me": 0.125478,
+        "s2_me_se": 0.00986331,
+        "start_age": 20
+      }
     },
     "no_high_school": {
       "age_range": [
@@ -154,7 +210,18 @@
       "s2_trans": 0.142233,
       "s2_trans_se": 0.0169746,
       "replacement_rate_estimated": 1.12674,
-      "level_65_k1992": 21.9934
+      "level_65_k1992": 21.9934,
+      "ar1_alternative": {
+        "rho": 0.938234,
+        "rho_se": 0.0274251,
+        "s2_init": 0.150112,
+        "s2_init_se": 0.0990778,
+        "s2_innov": 0.0498412,
+        "s2_innov_se": 0.0217782,
+        "s2_me": 0.154416,
+        "s2_me_se": 0.0321224,
+        "start_age": 20
+      }
     },
     "high_school": {
       "age_range": [
@@ -178,7 +245,18 @@
       "s2_trans": 0.0898521,
       "s2_trans_se": 0.00528975,
       "replacement_rate_estimated": 0.883015,
-      "level_65_k1992": 36.3467
+      "level_65_k1992": 36.3467,
+      "ar1_alternative": {
+        "rho": 0.976721,
+        "rho_se": 0.00741293,
+        "s2_init": 0.157561,
+        "s2_init_se": 0.0245913,
+        "s2_innov": 0.0170409,
+        "s2_innov_se": 0.00388813,
+        "s2_me": 0.14336,
+        "s2_me_se": 0.0116829,
+        "start_age": 20
+      }
     },
     "college": {
       "age_range": [
@@ -202,7 +280,18 @@
       "s2_trans": 0.0690288,
       "s2_trans_se": 0.00619464,
       "replacement_rate_estimated": 0.661287,
-      "level_65_k1992": 78.6675
+      "level_65_k1992": 78.6675,
+      "ar1_alternative": {
+        "rho": 0.983717,
+        "rho_se": 0.0142485,
+        "s2_init": 0.192557,
+        "s2_init_se": 0.0439881,
+        "s2_innov": 0.0171565,
+        "s2_innov_se": 0.00946963,
+        "s2_me": 0.150332,
+        "s2_me_se": 0.0251405,
+        "start_age": 22
+      }
     }
   },
   "cgm_window_1969_1991": {
@@ -228,7 +317,18 @@
       "s2_trans": 0.0798519,
       "s2_trans_se": 0.00443892,
       "replacement_rate_estimated": 0.67199,
-      "level_65_k1992": 30.4181
+      "level_65_k1992": 30.4181,
+      "ar1_alternative": {
+        "rho": 0.983028,
+        "rho_se": 0.00472731,
+        "s2_init": 0.0996607,
+        "s2_init_se": 0.013398,
+        "s2_innov": 0.0153659,
+        "s2_innov_se": 0.0021092,
+        "s2_me": 0.100604,
+        "s2_me_se": 0.00641732,
+        "start_age": 20
+      }
     },
     "no_high_school": {
       "age_range": [
@@ -252,7 +352,18 @@
       "s2_trans": 0.0885914,
       "s2_trans_se": 0.0100669,
       "replacement_rate_estimated": 0.820038,
-      "level_65_k1992": 18.947
+      "level_65_k1992": 18.947,
+      "ar1_alternative": {
+        "rho": 0.972277,
+        "rho_se": 0.0130043,
+        "s2_init": 0.169929,
+        "s2_init_se": 0.0534414,
+        "s2_innov": 0.0163224,
+        "s2_innov_se": 0.00569878,
+        "s2_me": 0.110275,
+        "s2_me_se": 0.0163067,
+        "start_age": 20
+      }
     },
     "high_school": {
       "age_range": [
@@ -276,7 +387,18 @@
       "s2_trans": 0.0818057,
       "s2_trans_se": 0.00538519,
       "replacement_rate_estimated": 0.765468,
-      "level_65_k1992": 29.5807
+      "level_65_k1992": 29.5807,
+      "ar1_alternative": {
+        "rho": 0.964084,
+        "rho_se": 0.0103241,
+        "s2_init": 0.0724065,
+        "s2_init_se": 0.0148969,
+        "s2_innov": 0.0182903,
+        "s2_innov_se": 0.00389942,
+        "s2_me": 0.0867079,
+        "s2_me_se": 0.0084377,
+        "start_age": 20
+      }
     },
     "college": {
       "age_range": [
@@ -300,7 +422,18 @@
       "s2_trans": 0.0649199,
       "s2_trans_se": 0.0102498,
       "replacement_rate_estimated": 0.679184,
-      "level_65_k1992": 48.7073
+      "level_65_k1992": 48.7073,
+      "ar1_alternative": {
+        "rho": 0.987185,
+        "rho_se": 0.0160327,
+        "s2_init": 0.0671821,
+        "s2_init_se": 0.02904,
+        "s2_innov": 0.0116212,
+        "s2_innov_se": 0.00573838,
+        "s2_me": 0.12184,
+        "s2_me_se": 0.0186589,
+        "start_age": 22
+      }
     }
   }
 }

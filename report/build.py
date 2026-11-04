@@ -199,6 +199,8 @@ def load():
         t2=pd.read_csv(os.path.join(CGM, "table2_age_polynomial.csv")),
         t3=pd.read_csv(os.path.join(CGM, "table3_variances.csv")),
         sens=pd.read_csv(os.path.join(CGM, "sensitivity_variances.csv")),
+        ar1=pd.read_csv(os.path.join(EXT, "ar1_estimates.csv")),
+        ar1m=pd.read_csv(os.path.join(EXT, "ar1_moments.csv")),
     )
     e = D["est"]
     D["main"] = e[(e["measure"] == "cgm") & (e["sample"] == "drop_lt2k")]
@@ -240,6 +242,7 @@ def build():
 <li><b>Less education means more transitory risk,</b> and that gap has widened: since 2007 the transitory variance is {get(M, "p4", "education", "no_high_school", "s2_trans"):.3f} without a high school diploma and {get(M, "p4", "education", "college", "s2_trans"):.3f} with a degree. Permanent risk is now similar across groups.</li>
 <li><b>Low earners face the largest transitory shocks and the flattest profiles;</b> industry matters for transitory risk more than for permanent risk.</li>
 <li><b>SIPP and CPS agree on the direction of every trend,</b> but their panels are too short to split shocks into permanent and transitory, so the variances come from the PSID.</li>
+<li><b>Shocks are very persistent but not quite permanent.</b> Estimated as an AR(1), as Choukhmane and de Silva (2026) do, persistence is about 0.98 in the PSID, so half of a shock fades in roughly 40 years; the dataset carries these parameters as an alternative to the random walk.</li>
 </ul>"""))
 
     # ---- section 2 model & method
@@ -471,6 +474,68 @@ def build():
 {fig10}
 {tab("Men's own earnings in three surveys", srct, list(srct.columns), "Growth and change are ratios of fitted earnings. PSID and SIPP σ²u, σ²ε: Carroll-Samwick (PSID lags up to 11, SIPP up to 4). CPS σ²u: within-cohort variance growth with age (Deaton-Paxson), σ²ε from the variance of matched one-year changes. “lags 1-4” refits PSID with only the lags a SIPP panel allows.", {c: (f2 if c.startswith(("Growth", "Change")) else f3) for c in srct.columns[1:]})}"""))
 
+    # ---- section 10 persistence: AR(1) alternative
+    A = D["ar1"]
+    def a1(src, meas, per, grp, spec="cds"):
+        return A[(A["source"] == src) & (A["measure"] == meas) & (A["period"] == per) & (A["group"] == grp)
+                 & (A["spec"] == spec)].iloc[0]
+    arows = []
+    for lab, src, meas, per, grp in [
+            ("PSID household, 1969-2022, all", "psid", "cgm", "full", "all"),
+            ("  no high school", "psid", "cgm", "full", "no_high_school"),
+            ("  high school", "psid", "cgm", "full", "high_school"),
+            ("  college", "psid", "cgm", "full", "college"),
+            ("PSID household, 1969-1991, all", "psid", "cgm", "cgm", "all"),
+            ("PSID household, 2007-2022, all", "psid", "cgm", "p4", "all"),
+            ("PSID men's own earnings, 1969-2022", "psid", "head_earn", "full", "all"),
+            ("SIPP 1996 panel, job stayers", "sipp", "main_job_earn", "panel_1996_stayers", "all"),
+            ("SIPP 1996-2012 (old design)", "sipp", "person_earn", "old_1995_2013", "all"),
+            ("SIPP 2013-2024 (new design)", "sipp", "person_earn", "new_2013_2024", "all")]:
+        r, rw = a1(src, meas, per, grp), a1(src, meas, per, grp, "rw")
+        arows.append({"Sample": lab, "ρ": r["rho"], "SE ρ": r["rho_se"], "σ²η,0": r["s2_init"], "σ²ξ": r["s2_innov"],
+                      "σ²ι": r["s2_me"], "Half-life (yrs)": r["half_life"], "Var η at 65": r["var_eta_65"],
+                      "Fit gain vs RW": 1 - r["ssr"] / rw["ssr"]})
+    cds_rho, cds_xi, cds_0, cds_me = 0.9332, 0.0298, 0.1749, 0.0538
+    cds_v65 = cds_rho ** 86 * cds_0 + cds_xi * (1 - cds_rho ** 86) / (1 - cds_rho ** 2)
+    arows.append({"Sample": "Choukhmane and de Silva (SIPP 1996, job stayers)", "ρ": cds_rho, "SE ρ": np.nan, "σ²η,0": cds_0,
+                  "σ²ξ": cds_xi, "σ²ι": cds_me, "Half-life (yrs)": np.log(0.5) / np.log(cds_rho), "Var η at 65": cds_v65,
+                  "Fit gain vs RW": np.nan})
+    at = pd.DataFrame(arows)
+    def hl(v):
+        return "" if pd.isna(v) else ("∞" if np.isinf(v) or v > 500 else f"{v:.0f}")
+    def pct(v):
+        return "" if pd.isna(v) else f"{100 * v:.0f}%"
+    afmt = {"ρ": f3, "SE ρ": f3, "σ²η,0": f3, "σ²ξ": lambda v: f"{v:.4f}", "σ²ι": f3, "Half-life (yrs)": hl,
+            "Var η at 65": lambda v: "" if pd.isna(v) or np.isinf(v) else f"{v:.2f}", "Fit gain vs RW": pct}
+    Mm = D["ar1m"]
+    Mm = Mm[(Mm["source"] == "psid") & (Mm["measure"] == "cgm") & (Mm["period"] == "cgm") & (Mm["group"] == "all")]
+    g = Mm.groupby("d")[["m", "fit_cds", "fit_rw"]].mean().reset_index()
+    g2 = g[g["d"] >= 1]
+    aser = [dict(name="Data", cls="s1", pts=list(zip(g2["d"], g2["m"]))),
+            dict(name="AR(1) fit", cls="s2", pts=list(zip(g2["d"], g2["fit_cds"]))),
+            dict(name="Random walk fit", cls="s3", dash=True, pts=list(zip(g2["d"], g2["fit_rw"])))]
+    figa = figure("Autocovariance of residual household income by lag: data and two fitted processes",
+                  line_chart(aser, "Years apart", "Covariance", yfmt="{:.2f}", markers=True, tipx="lag {:.0f}",
+                             ydom=(0.1, float(g2["m"].max()) * 1.1), xdom=(1, 20), xticks=[1, 5, 10, 15, 20]),
+                  "PSID household income (CGM definition), 1969-1991 (annual waves, so every lag is observed), all households. Residual log income after the fixed-effects age profile, demeaned by year. Points average the covariance over ages; the fits use each age separately. Lag 0 (the variance, about "
+                  + f"{g['m'].iloc[0]:.2f}" + ") is in the data table but not plotted. A random walk implies covariances that barely fall with the lag; the data fall steadily, which an AR(1) captures.",
+                  g.rename(columns={"d": "Lag", "m": "Data", "fit_cds": "AR(1) fit", "fit_rw": "Random walk fit"}),
+                  ["Lag", "Data", "AR(1) fit", "Random walk fit"], {"Data": f3, "AR(1) fit": f3, "Random walk fit": f3},
+                  leg=legend([(x["name"], x["cls"], x.get("dash", False)) for x in aser]))
+    hh, hc, he, h4 = a1("psid", "cgm", "full", "all"), a1("psid", "cgm", "cgm", "all"), a1("psid", "head_earn", "full", "all"), a1("psid", "cgm", "p4", "all")
+    st = a1("sipp", "main_job_earn", "panel_1996_stayers", "all")
+    B.append(sec("persistence", "How persistent are shocks? An AR(1) alternative", f"""
+<p>CGM treat permanent shocks as a random walk: a shock never fades. Choukhmane and de Silva (<i>Journal of Finance</i>, 2026) use an AR(1) instead, estimated on the 1996 SIPP panel: persistence ρ = 0.933, so a shock loses half its effect in about 10 years. Because the choice changes how much risk a worker faces late in working life, we estimate their specification on our own samples. The persistent part η starts at the first working age (20, or 22 with a college degree) with variance σ²<sub>η,0</sub>, then η<sub>t</sub> = ρη<sub>t−1</sub> + ξ<sub>t</sub> with Var(ξ) = σ²<sub>ξ</sub>; a serially uncorrelated part ι (transitory shocks and measurement error, Var σ²<sub>ι</sub>) sits on top. The age profile is the one already in the dataset. The four parameters minimize the distance between the covariances of residual log income at every age and lag and those the model implies (equal weights; bootstrap SEs over people).</p>
+<ul class="find">
+<li><b>Shocks are very persistent in the PSID, but not permanent.</b> For household income over 1969-2022, ρ = {hh['rho']:.3f} (SE {hh['rho_se']:.3f}): half of a shock is gone after about {hh['half_life']:.0f} years. The AR(1) fits the covariances {100 * (1 - hh['ssr'] / a1('psid', 'cgm', 'full', 'all', 'rw')['ssr']):.0f}% better than a random walk, because covariances fall steadily the further apart two years are (Figure 12).</li>
+<li><b>ρ is similar for men's own earnings ({he['rho']:.3f}), in CGM's years ({hc['rho']:.3f}) and since 2007 ({h4['rho']:.3f}),</b> and across education groups (0.97-0.98).</li>
+<li><b>Our ρ is higher than Choukhmane and de Silva's 0.933, and the SIPP cannot settle the gap.</b> A SIPP panel follows people for at most four years, so ρ is identified only from lags of 1 to 3 years. On the same 1996 panel and a similar sample of job stayers, we get ρ at its upper bound of 1 with σ²<sub>ξ</sub> = {st['s2_innov']:.4f}. Their pair (ρ = 0.933, σ²<sub>ξ</sub> = 0.030) implies almost the same rise of variance with age, so both lie on a ridge that short panels cannot tell apart; the PSID's long lags can.</li>
+<li><b>The variance of the serially uncorrelated part is larger than CGM's transitory variance</b> ({hh['s2_me']:.3f} against {get(M, "full", "all", "all", "s2_trans"):.3f}), because the covariance method assigns to it everything that does not carry over even one year, while the CGM method works from income changes.</li>
+</ul>
+<p>For a life cycle model the two processes give about the same spread of income by 65: the persistent part's variance reaches {hh['var_eta_65']:.2f} under the AR(1) and {a1('psid', 'cgm', 'full', 'all', 'rw')['var_eta_65']:.2f} under the random walk fitted to the same covariances. They differ in how risk arrives. The AR(1) has annual innovations about {hh['s2_innov'] / a1('psid', 'cgm', 'full', 'all', 'rw')['s2_innov']:.1f} times as large ({hh['s2_innov']:.4f} against {a1('psid', 'cgm', 'full', 'all', 'rw')['s2_innov']:.4f}) that fade slowly, so a shock late in working life does less damage to lifetime income than a permanent one would. Choukhmane and de Silva's lower ρ gives a variance at 65 of only {cds_v65:.2f}, so their workers face markedly less accumulated risk. The AR(1) parameters for every recommended set are in the dataset (<code>ar1_alternative</code>), next to the random walk; the profile and replacement rates are unchanged.</p>
+{figa}
+{tab("AR(1) estimates beside Choukhmane and de Silva", at, list(at.columns), "PSID household: CGM income and sample; men's own earnings: head's labor income, no household controls; SIPP: men's own annual earnings (stayers: same main employer and one job every year, main-job earnings). Var η at 65: variance of the persistent part at 65 from a start age of 20. Fit gain: reduction in the sum of squared covariance errors compared with a random walk (ρ = 1) fitted to the same moments. Choukhmane and de Silva: NBER w32476 Table A3 (the journal version's Internet Appendix Table IAIII). SIPP fits use lags of at most 3 years.", afmt)}"""))
+
     # ---- section 10 parameters
     pr = []
     for p, plab in [("full", "Baseline, 1969-2022"), ("p4", "Recent, 2007-2022")]:
@@ -646,7 +711,7 @@ def main():
     toc = "".join(f'<li><a href="#{i}">{esc(t)}</a></li>' for i, t in [
         ("summary", "Summary"), ("method", "Model and method"), ("replication", "Replicating CGM"), ("trends", "Change over time"),
         ("education", "Education"), ("industry", "Industry"), ("income", "Income level"), ("cohorts", "Birth cohort"),
-        ("sources", "SIPP and CPS"), ("parameters", "Model parameters"), ("caveats", "Caveats"), ("sources-list", "Sources")])
+        ("sources", "SIPP and CPS"), ("persistence", "AR(1) alternative"), ("parameters", "Model parameters"), ("caveats", "Caveats"), ("sources-list", "Sources")])
     page = f"""<title>US Labor Income Process</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">

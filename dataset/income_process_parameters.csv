@@ -2712,3 +2712,51 @@ psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,income_q_init,Q5,s2_trans,0.04
 psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,income_q_init,Q5,replacement_rate,0.670581,,ratio,Retired income incl. pensions (65-75) / fitted level at 65
 psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,income_q_init,Q5,n_units,406,,count,Person x education units
 psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,income_q_init,Q5,n_obs,1707,,count,Person-years
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,all,all,ar1_rho,0.982582,0.00278785,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,all,all,ar1_s2_init,0.116454,0.0102282,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,all,all,ar1_s2_innov,0.0172474,0.00142995,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,all,all,ar1_s2_me,0.143971,0.00471377,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,college,ar1_rho,0.982699,0.00695809,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,college,ar1_s2_init,0.0947942,0.0179695,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,college,ar1_s2_innov,0.0151995,0.00301612,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,college,ar1_s2_me,0.162418,0.0113058,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,high_school,ar1_rho,0.974041,0.00482531,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,high_school,ar1_s2_init,0.0910196,0.00990422,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,high_school,ar1_s2_innov,0.0146297,0.00181646,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,high_school,ar1_s2_me,0.13274,0.0054855,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,no_high_school,ar1_rho,0.977494,0.00503782,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,no_high_school,ar1_s2_init,0.179953,0.0328353,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,no_high_school,ar1_s2_innov,0.0140165,0.00251648,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,full,1969-2022,education,no_high_school,ar1_s2_me,0.15053,0.00933661,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,all,all,ar1_rho,0.983028,0.00472731,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,all,all,ar1_s2_init,0.0996607,0.013398,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,all,all,ar1_s2_innov,0.0153659,0.0021092,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,all,all,ar1_s2_me,0.100604,0.00641732,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,college,ar1_rho,0.987185,0.0160327,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,college,ar1_s2_init,0.0671821,0.02904,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,college,ar1_s2_innov,0.0116212,0.00573838,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,college,ar1_s2_me,0.12184,0.0186589,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,high_school,ar1_rho,0.964084,0.0103241,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,high_school,ar1_s2_init,0.0724065,0.0148969,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,high_school,ar1_s2_innov,0.0182903,0.00389942,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,high_school,ar1_s2_me,0.0867079,0.0084377,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,no_high_school,ar1_rho,0.972277,0.0130043,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,no_high_school,ar1_s2_init,0.169929,0.0534414,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,no_high_school,ar1_s2_innov,0.0163224,0.00569878,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,cgm,1969-1991,education,no_high_school,ar1_s2_me,0.110275,0.0163067,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,all,all,ar1_rho,0.971155,0.00452081,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,all,all,ar1_s2_init,0.21288,0.0220592,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,all,all,ar1_s2_innov,0.0311549,0.00388291,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,all,all,ar1_s2_me,0.125478,0.00986331,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,college,ar1_rho,0.983717,0.0142485,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,college,ar1_s2_init,0.192557,0.0439881,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,college,ar1_s2_innov,0.0171565,0.00946963,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,college,ar1_s2_me,0.150332,0.0251405,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,high_school,ar1_rho,0.976721,0.00741293,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,high_school,ar1_s2_init,0.157561,0.0245913,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,high_school,ar1_s2_innov,0.0170409,0.00388813,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,high_school,ar1_s2_me,0.14336,0.0116829,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,no_high_school,ar1_rho,0.938234,0.0274251,per year,AR(1) alternative: persistence of the persistent component eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,no_high_school,ar1_s2_init,0.150112,0.0990778,log points squared,AR(1) alternative: variance of eta at the start age (20; 22 college)
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,no_high_school,ar1_s2_innov,0.0498412,0.0217782,log points squared,AR(1) alternative: variance of the annual innovation to eta
+psid,cgm_household,drop_lt2k_1992usd,p4,2007-2022,education,no_high_school,ar1_s2_me,0.154416,0.0321224,log points squared,AR(1) alternative: variance of the serially uncorrelated part (transitory shock plus measurement error)
